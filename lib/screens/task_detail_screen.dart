@@ -430,6 +430,8 @@ class _CaptainReassignSection extends StatelessWidget {
               label: const Text('Team member'),
               enableFilter: true,
               requestFocusOnTap: true,
+              inputDecorationTheme: AppTheme.dropdownInputDecorationTheme,
+              menuStyle: AppTheme.dropdownMenuStyle,
               dropdownMenuEntries: repo.users
                   .map((u) => DropdownMenuEntry(value: u.id, label: u.name))
                   .toList(),
