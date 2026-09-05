@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../services/auth_service.dart';
 
@@ -63,10 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                   ),
-                ),
-                const SizedBox(height: 12),
-                SignInWithAppleButton(
-                  onPressed: () => _handle(auth.signInWithApple),
                 ),
               ],
               if (_error != null) ...[
