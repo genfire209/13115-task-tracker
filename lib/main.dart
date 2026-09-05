@@ -10,6 +10,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/pending_approval_screen.dart';
 import 'screens/task_board_screen.dart';
 import 'theme/app_theme.dart';
+import 'widgets/gear_spinner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,12 +39,29 @@ class TaskTrackerApp extends StatelessWidget {
   }
 }
 
-class _RootRouter extends StatelessWidget {
+class _RootRouter extends StatefulWidget {
   const _RootRouter();
+
+  @override
+  State<_RootRouter> createState() => _RootRouterState();
+}
+
+class _RootRouterState extends State<_RootRouter> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<AuthService>().tryRestoreSession();
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
+    if (auth.isRestoring) {
+      return Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: GearSpinner(size: 48, color: AppTheme.primary)),
+      );
+    }
     if (!auth.isLoggedIn) return const LoginScreen();
     final user = auth.currentUser!;
     if (user.subteam == null) return const OnboardingScreen();
