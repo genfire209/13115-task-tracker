@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/task.dart';
-import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
@@ -27,7 +26,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
   Widget build(BuildContext context) {
     final repo = context.watch<TaskRepository>();
     final user = context.read<AuthService>().currentUser!;
-    final isCaptain = user.role == UserRole.captain;
+    final isCaptain = user.hasCaptainAccess;
 
     return Scaffold(
       appBar: AppBar(title: Text(isCaptain ? 'Assign Task' : 'Publish Task')),

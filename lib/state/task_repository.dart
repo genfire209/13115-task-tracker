@@ -16,6 +16,7 @@ class TaskRepository extends ChangeNotifier {
   final Map<String, List<TaskEvent>> _eventsByTask = {};
   List<ExtensionRequest> _pendingExtensionRequests = [];
   List<AppUser> _users = [];
+  List<AppUser> _pendingApprovals = [];
   LoginLog? _loginLog;
 
   bool isLoading = false;
@@ -25,6 +26,7 @@ class TaskRepository extends ChangeNotifier {
   List<TaskEvent> eventsFor(String taskId) => List.unmodifiable(_eventsByTask[taskId] ?? const []);
   List<ExtensionRequest> get pendingExtensionRequests => List.unmodifiable(_pendingExtensionRequests);
   List<AppUser> get users => List.unmodifiable(_users);
+  List<AppUser> get pendingApprovals => List.unmodifiable(_pendingApprovals);
   LoginLog? get loginLog => _loginLog;
 
   /// Display name for a user id (falls back to the id/email if not loaded yet).
@@ -63,6 +65,23 @@ class TaskRepository extends ChangeNotifier {
 
   Future<void> removeUser(String userId) async {
     await _api.removeUser(userId);
+    await loadAll();
+    await loadPendingApprovals();
+  }
+
+  Future<void> renameUser(String userId, String name) async {
+    await _api.renameUser(userId, name);
+    await loadAll();
+  }
+
+  Future<void> loadPendingApprovals() async {
+    _pendingApprovals = await _api.fetchPendingApprovals();
+    notifyListeners();
+  }
+
+  Future<void> approveUser(String userId) async {
+    await _api.approveUser(userId);
+    await loadPendingApprovals();
     await loadAll();
   }
 

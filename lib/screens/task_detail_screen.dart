@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../models/task.dart';
 import '../models/task_event.dart';
-import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
@@ -120,7 +119,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         final task = repo.tasks.firstWhere((t) => t.id == taskId);
         final user = auth.currentUser!;
         final isAssignee = task.assignedTo == user.id; // assignedTo stores the user's id (email)
-        final isCaptain = user.role == UserRole.captain;
+        final isCaptain = user.hasCaptainAccess;
         final events = repo.eventsFor(taskId);
         final pendingExtensions = repo.pendingExtensionRequests
             .where((r) => r.taskId == taskId)

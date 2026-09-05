@@ -9,10 +9,23 @@ import '../theme/app_theme.dart';
 import 'create_task_screen.dart';
 import 'login_activity_screen.dart';
 
-class CaptainDashboardScreen extends StatelessWidget {
+class CaptainDashboardScreen extends StatefulWidget {
   const CaptainDashboardScreen({super.key});
 
-  Future<void> _confirmRemove(BuildContext context, TaskRepository repo, String userId, String name) async {
+  @override
+  State<CaptainDashboardScreen> createState() => _CaptainDashboardScreenState();
+}
+
+class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TaskRepository>().loadPendingApprovals();
+    });
+  }
+
+  Future<void> _confirmRemove(TaskRepository repo, String userId, String name) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -33,6 +46,32 @@ class CaptainDashboardScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _editName(TaskRepository repo, String userId, String currentName) async {
+    final controller = TextEditingController(text: currentName);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit name'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(labelText: 'Full name'),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (newName != null && newName.isNotEmpty && newName != currentName) {
+      await repo.renameUser(userId, newName);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = context.watch<TaskRepository>();
@@ -50,6 +89,38 @@ class CaptainDashboardScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _SectionHeader(
+            icon: Icons.person_add_alt_1_outlined,
+            title: 'Pending approval',
+            count: repo.pendingApprovals.length,
+          ),
+          if (repo.pendingApprovals.isEmpty)
+            const _EmptyHint('No new members waiting on approval.')
+          else
+            ...repo.pendingApprovals.map((u) => Card(
+                  child: ListTile(
+                    title: Text(u.name),
+                    subtitle: Text(
+                      '${u.email}${u.subteam != null ? " · ${subteamLabel(u.subteam!)}" : ""}',
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: 'Approve',
+                          icon: const Icon(Icons.check_circle_outline, color: AppTheme.statusCompleted),
+                          onPressed: () => repo.approveUser(u.id),
+                        ),
+                        IconButton(
+                          tooltip: 'Deny',
+                          icon: const Icon(Icons.cancel_outlined, color: AppTheme.statusDeclined),
+                          onPressed: () => _confirmRemove(repo, u.id, u.name),
+                        ),
+                      ],
+                    ),
+                  ),
+                )),
+          const SizedBox(height: 24),
           _SectionHeader(
             icon: Icons.pending_actions,
             title: 'Pending extension requests',
@@ -130,6 +201,11 @@ class CaptainDashboardScreen extends StatelessWidget {
                             ],
                           ),
                         ),
+                        IconButton(
+                          tooltip: 'Edit name',
+                          icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.onSurfaceMuted),
+                          onPressed: () => _editName(repo, u.id, u.name),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -147,7 +223,7 @@ class CaptainDashboardScreen extends StatelessWidget {
                         if (!isSelf) ...[
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
-                            onPressed: () => _confirmRemove(context, repo, u.id, u.name),
+                            onPressed: () => _confirmRemove(repo, u.id, u.name),
                             icon: const Icon(Icons.person_remove_outlined,
                                 size: 16, color: AppTheme.statusDeclined),
                             label: const Text('Remove',

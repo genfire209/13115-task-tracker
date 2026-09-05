@@ -35,6 +35,15 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Re-fetches the current user's own record, e.g. to check whether a
+  /// captain/admin has approved them yet.
+  Future<void> refreshCurrentUser() async {
+    final user = _currentUser;
+    if (user == null) return;
+    _currentUser = await _api.fetchUserById(user.id);
+    notifyListeners();
+  }
+
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     _currentUser = null;

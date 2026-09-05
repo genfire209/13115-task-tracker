@@ -96,6 +96,8 @@ class AppUser {
   final String authProvider; // "google" or "apple"
   final UserRole role;
   final Subteam? subteam; // null = onboarding not complete yet
+  final bool isAdmin; // full captain-level access, independent of the public role label
+  final bool approved; // false = waiting on a captain/admin to let them in
 
   AppUser({
     required this.id,
@@ -104,7 +106,13 @@ class AppUser {
     required this.authProvider,
     required this.role,
     this.subteam,
+    this.isAdmin = false,
+    this.approved = true,
   });
+
+  /// True if this account should see captain-only tools, regardless of
+  /// what role is publicly displayed for them.
+  bool get hasCaptainAccess => role == UserRole.captain || isAdmin;
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
@@ -116,6 +124,8 @@ class AppUser {
           ? UserRole.captain
           : UserRole.member,
       subteam: subteamFromString(json['subteam'] as String?),
+      isAdmin: json['isAdmin'] as bool? ?? false,
+      approved: json['approved'] as bool? ?? true,
     );
   }
 
@@ -126,6 +136,8 @@ class AppUser {
         authProvider: authProvider,
         role: role,
         subteam: subteam ?? this.subteam,
+        isAdmin: isAdmin,
+        approved: approved,
       );
 
   Map<String, dynamic> toJson() => {
@@ -135,5 +147,7 @@ class AppUser {
         'authProvider': authProvider,
         'role': role == UserRole.captain ? 'captain' : 'member',
         'subteam': subteam != null ? subteamToString(subteam!) : null,
+        'isAdmin': isAdmin,
+        'approved': approved,
       };
 }
