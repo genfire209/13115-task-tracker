@@ -18,6 +18,33 @@ class AuthService extends ChangeNotifier {
   AppUser? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
 
+  bool _isRestoring = true;
+  bool get isRestoring => _isRestoring;
+
+  /// Called once at app startup. Google Sign-In keeps its own persisted
+  /// session (survives app updates and normal closes), so this lets a
+  /// returning member skip straight past the login screen without us having
+  /// to store anything ourselves.
+  Future<void> tryRestoreSession() async {
+    try {
+      final account = await _googleSignIn.signInSilently();
+      if (account != null) {
+        final auth = await account.authentication;
+        _currentUser = await _api.login(
+          provider: 'google',
+          idToken: auth.idToken ?? '',
+          name: account.displayName ?? account.email,
+        );
+        unawaited(_registerPushToken());
+      }
+    } catch (e) {
+      debugPrint('Silent sign-in failed: $e');
+    } finally {
+      _isRestoring = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> signInWithGoogle() async {
     final account = await _googleSignIn.signIn();
     if (account == null) return; // user cancelled
