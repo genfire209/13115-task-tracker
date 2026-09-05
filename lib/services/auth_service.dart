@@ -28,24 +28,16 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> signOut() async {
-    await _googleSignIn.signOut();
-    _currentUser = null;
+  Future<void> completeProfile({required String name, required Subteam subteam}) async {
+    final user = _currentUser;
+    if (user == null) return;
+    _currentUser = await _api.completeProfile(userId: user.id, name: name, subteam: subteam);
     notifyListeners();
   }
 
-  /// Dev-only helper to flip between captain/member views before the
-  /// backend actually assigns roles. Remove once real roles are wired up.
-  void toggleRoleForTesting() {
-    final user = _currentUser;
-    if (user == null) return;
-    _currentUser = AppUser(
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      authProvider: user.authProvider,
-      role: user.role == UserRole.captain ? UserRole.member : UserRole.captain,
-    );
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    _currentUser = null;
     notifyListeners();
   }
 }

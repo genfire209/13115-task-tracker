@@ -44,6 +44,63 @@ class ApiService {
     return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
   }
 
+  Future<AppUser> completeProfile({
+    required String userId,
+    required String name,
+    required Subteam subteam,
+  }) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name, 'subteam': subteamToString(subteam)}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to complete profile: ${res.body}');
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    return AppUser(
+      id: userId,
+      name: name,
+      email: userId,
+      authProvider: 'google',
+      role: UserRole.values.firstWhere(
+        (r) => (r == UserRole.captain ? 'captain' : 'member') == data['role'],
+        orElse: () => UserRole.member,
+      ),
+      subteam: subteam,
+    );
+  }
+
+  Future<void> setUserRole({required String userId, required UserRole role}) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'role': role == UserRole.captain ? 'captain' : 'member'}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to update role: ${res.body}');
+    }
+  }
+
+  Future<void> removeUser(String userId) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'banned': true}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to remove team member: ${res.body}');
+    }
+  }
+
+  Future<LoginLog> fetchLoginLog({required String requesterId}) async {
+    final res = await http.get(Uri.parse('$baseUrl/users/login-log?requesterId=$requesterId'));
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load login log: ${res.body}');
+    }
+    return LoginLog.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
   Future<Task> createTask({
     required String title,
     required String description,
@@ -70,17 +127,23 @@ class ApiService {
     return Task.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
-  /// action: 'claim' | 'accept' | 'decline' | 'complete'
+  /// action: 'claim' | 'accept' | 'decline' | 'complete' | 'reassign' | 'volunteer'
   Future<void> updateTask({
     required String taskId,
     required String action,
     required String actorId,
     String? reason,
+    String? newAssigneeId,
   }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/tasks/$taskId'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'action': action, 'actorId': actorId, 'reason': reason}),
+      body: jsonEncode({
+        'action': action,
+        'actorId': actorId,
+        'reason': reason,
+        'newAssigneeId': newAssigneeId,
+      }),
     );
     if (res.statusCode >= 400) {
       throw Exception('Failed to update task: ${res.body}');

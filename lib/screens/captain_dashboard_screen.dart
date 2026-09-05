@@ -1,0 +1,227 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../models/user.dart';
+import '../services/auth_service.dart';
+import '../state/task_repository.dart';
+import '../theme/app_theme.dart';
+import 'create_task_screen.dart';
+import 'login_activity_screen.dart';
+
+class CaptainDashboardScreen extends StatelessWidget {
+  const CaptainDashboardScreen({super.key});
+
+  Future<void> _confirmRemove(BuildContext context, TaskRepository repo, String userId, String name) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove team member?'),
+        content: Text('$name will no longer be able to sign in or appear on the roster.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.statusDeclined),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await repo.removeUser(userId);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final repo = context.watch<TaskRepository>();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Captain Portal')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
+        ),
+        icon: const Icon(Icons.add),
+        label: const Text('Assign Task'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _SectionHeader(
+            icon: Icons.pending_actions,
+            title: 'Pending extension requests',
+            count: repo.pendingExtensionRequests.length,
+          ),
+          if (repo.pendingExtensionRequests.isEmpty)
+            const _EmptyHint('No pending extension requests.')
+          else
+            ...repo.pendingExtensionRequests.map((r) {
+              final matches = repo.tasks.where((t) => t.id == r.taskId);
+              final taskTitle = matches.isEmpty ? r.taskId : matches.first.title;
+              return Card(
+                child: ListTile(
+                  title: Text(taskTitle),
+                  subtitle: Text(
+                    '${repo.nameFor(r.requestedBy)} wants ${DateFormat.yMMMd().format(r.newDueDate)}\n${r.reason}',
+                  ),
+                  isThreeLine: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.check, color: AppTheme.statusCompleted),
+                        onPressed: () => repo.decideExtension(r.id, true, 'captain-portal'),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: AppTheme.statusDeclined),
+                        onPressed: () => repo.decideExtension(r.id, false, 'captain-portal'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          const SizedBox(height: 24),
+          _SectionHeader(
+            icon: Icons.groups_outlined,
+            title: 'Team roster',
+            count: repo.users.length,
+          ),
+          ...repo.users.map((u) {
+            final isSelf = u.id == context.read<AuthService>().currentUser!.id;
+            final avatarColor = u.subteam != null
+                ? AppTheme.subteamColor(u.subteam!)
+                : AppTheme.onSurfaceMuted;
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: avatarColor.withValues(alpha: 0.2),
+                          child: Text(
+                            u.name.isNotEmpty ? u.name[0].toUpperCase() : '?',
+                            style: TextStyle(color: avatarColor, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(u.name,
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                              const SizedBox(height: 2),
+                              Text(
+                                u.email,
+                                style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 13),
+                              ),
+                              Text(
+                                u.subteam != null ? subteamLabel(u.subteam!) : 'Onboarding pending',
+                                style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        FilterChip(
+                          label: Text(u.role == UserRole.captain ? 'Captain' : 'Member'),
+                          selected: u.role == UserRole.captain,
+                          onSelected: (_) => repo.setUserRole(
+                            u.id,
+                            u.role == UserRole.captain ? UserRole.member : UserRole.captain,
+                          ),
+                        ),
+                        if (!isSelf) ...[
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: () => _confirmRemove(context, repo, u.id, u.name),
+                            icon: const Icon(Icons.person_remove_outlined,
+                                size: 16, color: AppTheme.statusDeclined),
+                            label: const Text('Remove',
+                                style: TextStyle(color: AppTheme.statusDeclined)),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppTheme.statusDeclined),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 24),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('Login activity'),
+              subtitle: const Text('See every account and when they last signed in'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginActivityScreen()),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final int? count;
+  const _SectionHeader({required this.icon, required this.title, this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppTheme.onSurfaceMuted),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+          if (count != null) ...[
+            const SizedBox(width: 8),
+            Chip(
+              label: Text('$count'),
+              padding: EdgeInsets.zero,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyHint extends StatelessWidget {
+  final String text;
+  const _EmptyHint(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(text, style: const TextStyle(color: AppTheme.onSurfaceMuted)),
+    );
+  }
+}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,42 +34,108 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.read<AuthService>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.precision_manufacturing,
-                  size: 72, color: Color(0xFFC8102E)),
-              const SizedBox(height: 16),
-              const Text(
-                'FTC TEAM 13115',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF17171F), AppTheme.background],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [AppTheme.primary, Color(0xFF8B1029)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.35),
+                            blurRadius: 32,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.precision_manufacturing,
+                          size: 44, color: Colors.white),
+                    ),
+                    const SizedBox(height: 28),
+                    const Text(
+                      'FTC TEAM 13115',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
+                        color: AppTheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Task Tracker',
+                      style: TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 15),
+                    ),
+                    const SizedBox(height: 56),
+                    if (_loading)
+                      const CircularProgressIndicator(color: AppTheme.primary),
+                    if (!_loading)
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _handle(auth.signInWithGoogle),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 14),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.g_mobiledata, size: 28, color: Colors.black87),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Continue with Google',
+                                    style: TextStyle(
+                                      color: Colors.black87,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppTheme.statusDeclined),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const Text('Task Tracker', style: TextStyle(color: Colors.grey)),
-              const SizedBox(height: 48),
-              if (_loading) const CircularProgressIndicator(),
-              if (!_loading) ...[
-                ElevatedButton.icon(
-                  onPressed: () => _handle(auth.signInWithGoogle),
-                  icon: const Icon(Icons.g_mobiledata, size: 28),
-                  label: const Text('Continue with Google'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
-                ),
-              ],
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Text(_error!, style: const TextStyle(color: Colors.red)),
-              ],
-            ],
+            ),
           ),
         ),
       ),

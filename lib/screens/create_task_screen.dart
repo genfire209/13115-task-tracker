@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../models/task.dart';
 import '../models/user.dart';
-import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
+import '../theme/app_theme.dart';
 
 class CreateTaskScreen extends StatefulWidget {
   const CreateTaskScreen({super.key});
@@ -18,44 +18,19 @@ class CreateTaskScreen extends StatefulWidget {
 class _CreateTaskScreenState extends State<CreateTaskScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  final ApiService _api = ApiService();
 
   TaskCategory _category = TaskCategory.mechanical;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
-  String? _assigneeId; // null = leave open
-
-  List<AppUser> _users = [];
-  bool _loadingUsers = true;
-  String? _usersError;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUsers();
-  }
-
-  Future<void> _loadUsers() async {
-    try {
-      final users = await _api.fetchUsers();
-      setState(() {
-        _users = users;
-        _loadingUsers = false;
-      });
-    } catch (e) {
-      setState(() {
-        _usersError = e.toString();
-        _loadingUsers = false;
-      });
-    }
-  }
+  String? _assigneeId; // null = leave open (captain only)
 
   @override
   Widget build(BuildContext context) {
-    final repo = context.read<TaskRepository>();
+    final repo = context.watch<TaskRepository>();
     final user = context.read<AuthService>().currentUser!;
+    final isCaptain = user.role == UserRole.captain;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New Task')),
+      appBar: AppBar(title: Text(isCaptain ? 'Assign Task' : 'Publish Task')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -74,23 +49,57 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             initialValue: _category,
             decoration: const InputDecoration(labelText: 'Category'),
             items: TaskCategory.values
-                .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+                .map((c) => DropdownMenuItem(
+                      value: c,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: AppTheme.categoryColor(c),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(c.name),
+                        ],
+                      ),
+                    ))
                 .toList(),
             onChanged: (v) => setState(() => _category = v!),
           ),
           const SizedBox(height: 12),
-          if (_loadingUsers) const LinearProgressIndicator(),
-          if (_usersError != null)
-            Text('Could not load team members: $_usersError', style: const TextStyle(color: Colors.red)),
-          if (!_loadingUsers && _usersError == null)
+          if (isCaptain)
             DropdownButtonFormField<String?>(
               initialValue: _assigneeId,
               decoration: const InputDecoration(labelText: 'Assign to'),
               items: [
                 const DropdownMenuItem<String?>(value: null, child: Text('Leave open (anyone can claim)')),
-                ..._users.map((u) => DropdownMenuItem<String?>(value: u.id, child: Text(u.name))),
+                ...repo.users.map((u) => DropdownMenuItem<String?>(value: u.id, child: Text(u.name))),
               ],
               onChanged: (v) => setState(() => _assigneeId = v),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.person_outline, size: 18, color: AppTheme.onSurfaceMuted),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'This task will be published as yours and auto-accepted.',
+                      style: TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
             ),
           const SizedBox(height: 12),
           ListTile(
@@ -116,7 +125,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 description: _descController.text.trim(),
                 category: _category,
                 createdBy: user.id,
-                assignedTo: _assigneeId,
+                assignedTo: isCaptain ? _assigneeId : user.id,
                 dueDate: _dueDate,
               );
               Navigator.pop(context);
