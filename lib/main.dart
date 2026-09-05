@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'services/auth_service.dart';
+import 'services/notification_service.dart';
 import 'state/task_repository.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -13,6 +14,7 @@ import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await NotificationService.initializeFirebase();
   runApp(const TaskTrackerApp());
 }
 

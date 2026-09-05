@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/user.dart';
 import 'api_service.dart';
+import 'notification_service.dart';
 
 /// Handles Google sign-in and exposes the current logged-in user.
 class AuthService extends ChangeNotifier {
@@ -26,6 +29,20 @@ class AuthService extends ChangeNotifier {
       name: account.displayName ?? account.email,
     );
     notifyListeners();
+    unawaited(_registerPushToken());
+  }
+
+  /// Best-effort: failures here (permission denied, no APNs token yet on a
+  /// simulator, etc.) shouldn't block sign-in.
+  Future<void> _registerPushToken() async {
+    try {
+      final token = await NotificationService.requestPermissionAndGetToken();
+      if (token != null && _currentUser != null) {
+        await _api.setPushToken(_currentUser!.id, token);
+      }
+    } catch (e) {
+      debugPrint('Could not register push token: $e');
+    }
   }
 
   Future<void> completeProfile({required String name, required Subteam subteam}) async {
