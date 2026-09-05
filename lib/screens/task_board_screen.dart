@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/task.dart';
-import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
@@ -11,6 +10,7 @@ import 'captain_dashboard_screen.dart';
 import 'create_task_screen.dart';
 import 'login_activity_screen.dart';
 import 'task_detail_screen.dart';
+import 'team_roster_screen.dart';
 
 class TaskBoardScreen extends StatefulWidget {
   const TaskBoardScreen({super.key});
@@ -39,7 +39,7 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
     final auth = context.watch<AuthService>();
     final repo = context.watch<TaskRepository>();
     final user = auth.currentUser!;
-    final isCaptain = user.role == UserRole.captain;
+    final isCaptain = user.hasCaptainAccess;
 
     List<Task> filterFor(TaskCategory? category) {
       var tasks = category == null ? repo.tasks : repo.tasks.where((t) => t.category == category);
@@ -65,6 +65,14 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
                 MaterialPageRoute(builder: (_) => const CaptainDashboardScreen()),
               ),
             ),
+          IconButton(
+            tooltip: 'Team Roster',
+            icon: const Icon(Icons.people_outline),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TeamRosterScreen()),
+            ),
+          ),
           IconButton(
             tooltip: 'Login Activity',
             icon: const Icon(Icons.history),

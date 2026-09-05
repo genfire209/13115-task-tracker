@@ -44,6 +44,20 @@ class ApiService {
     return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
   }
 
+  Future<List<AppUser>> fetchPendingApprovals() async {
+    final res = await http.get(Uri.parse('$baseUrl/users/pending-approval'));
+    final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
+    return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
+  }
+
+  Future<AppUser> fetchUserById(String userId) async {
+    final res = await http.get(Uri.parse('$baseUrl/users/$userId'));
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load user: ${res.body}');
+    }
+    return AppUser.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
   Future<AppUser> completeProfile({
     required String userId,
     required String name,
@@ -57,18 +71,7 @@ class ApiService {
     if (res.statusCode >= 400) {
       throw Exception('Failed to complete profile: ${res.body}');
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    return AppUser(
-      id: userId,
-      name: name,
-      email: userId,
-      authProvider: 'google',
-      role: UserRole.values.firstWhere(
-        (r) => (r == UserRole.captain ? 'captain' : 'member') == data['role'],
-        orElse: () => UserRole.member,
-      ),
-      subteam: subteam,
-    );
+    return fetchUserById(userId);
   }
 
   Future<void> setUserRole({required String userId, required UserRole role}) async {
@@ -79,6 +82,28 @@ class ApiService {
     );
     if (res.statusCode >= 400) {
       throw Exception('Failed to update role: ${res.body}');
+    }
+  }
+
+  Future<void> renameUser(String userId, String name) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'name': name}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to rename team member: ${res.body}');
+    }
+  }
+
+  Future<void> approveUser(String userId) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'approved': true}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to approve team member: ${res.body}');
     }
   }
 

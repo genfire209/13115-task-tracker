@@ -6,6 +6,7 @@ import 'services/auth_service.dart';
 import 'state/task_repository.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
+import 'screens/pending_approval_screen.dart';
 import 'screens/task_board_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -42,7 +43,9 @@ class _RootRouter extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
     if (!auth.isLoggedIn) return const LoginScreen();
-    if (auth.currentUser!.subteam == null) return const OnboardingScreen();
+    final user = auth.currentUser!;
+    if (user.subteam == null) return const OnboardingScreen();
+    if (!user.approved) return const PendingApprovalScreen();
     return const TaskBoardScreen();
   }
 }
