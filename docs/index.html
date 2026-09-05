@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13115 Robotics Privacy</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: light dark;
+    --ink:#17171C;
+    --paper:#F3F3F6;
+    --raised:#FFFFFF;
+    --line:#E1E0E6;
+    --muted:#6B6B76;
+    --accent:#D81B3F;
+    --accent-soft:#FBE4E9;
+    --accent-ink:#FFFFFF;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#F5F5F7;
+      --paper:#0E0E12;
+      --raised:#1A1A20;
+      --line:#32323C;
+      --muted:#9A9AA5;
+      --accent:#FF3B57;
+      --accent-soft:rgba(255,59,87,0.16);
+      --accent-ink:#17171C;
+    }
+  }
+
+  *{box-sizing:border-box;}
+  html,body{ background:var(--paper); }
+  body{
+    margin:0;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', system-ui, sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  img{ max-width:100%; }
+  ::selection{ background:var(--accent-soft); }
+
+  .page{
+    max-width:720px;
+    margin:0 auto;
+    padding:56px 24px 96px;
+  }
+
+  .nameplate{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding-bottom:22px;
+    border-bottom:2px solid var(--ink);
+  }
+  .gear{
+    width:34px;
+    height:34px;
+    flex:none;
+    color:var(--accent);
+  }
+  .wordmark{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:clamp(1.5rem, 4vw, 1.9rem);
+    letter-spacing:0.02em;
+    text-transform:uppercase;
+    text-wrap:balance;
+  }
+  .docmeta{
+    margin-top:14px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+  .docmeta span:not(:last-child)::after{
+    content:"·";
+    margin-left:14px;
+    color:var(--line);
+  }
+
+  .intro{
+    margin-top:34px;
+    font-size:1.05rem;
+    max-width:62ch;
+    color:var(--ink);
+  }
+  .intro strong{ color:var(--accent); font-weight:600; }
+
+  section{
+    margin-top:48px;
+  }
+  .section-label{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.75rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin-bottom:16px;
+  }
+  .section-label::before{
+    content:"";
+    width:22px;
+    height:2px;
+    background:var(--accent);
+    flex:none;
+  }
+  section h2{
+    font-family:'Oswald', sans-serif;
+    font-weight:600;
+    font-size:1.3rem;
+    text-transform:uppercase;
+    letter-spacing:0.01em;
+    margin:0 0 14px;
+    text-wrap:balance;
+  }
+  section p{
+    margin:0 0 12px;
+    max-width:62ch;
+    color:var(--ink);
+  }
+  section p.muted{ color:var(--muted); font-size:0.92rem; }
+
+  .spec-list{
+    display:flex;
+    flex-direction:column;
+    border-top:1px solid var(--line);
+  }
+  .spec-row{
+    display:grid;
+    grid-template-columns:minmax(120px,180px) 1fr;
+    gap:6px 24px;
+    padding:14px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .spec-row dt{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.78rem;
+    letter-spacing:0.03em;
+    color:var(--muted);
+    text-transform:uppercase;
+    margin:0;
+  }
+  .spec-row dd{
+    margin:0;
+    color:var(--ink);
+  }
+
+  .contact-card{
+    margin-top:16px;
+    background:var(--raised);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:22px 24px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .contact-card p{ margin:0; max-width:38ch; }
+  .contact-link{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:500;
+    font-size:0.92rem;
+    text-decoration:none;
+    padding:11px 18px;
+    border-radius:3px;
+    white-space:nowrap;
+    transition:filter 0.15s ease;
+  }
+  .contact-link:hover{ filter:brightness(1.08); }
+  .contact-link:focus-visible{ outline:2px solid var(--ink); outline-offset:3px; }
+
+  footer{
+    margin-top:64px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: no-preference){
+    .page{ animation:rise 0.5s ease both; }
+  }
+  @keyframes rise{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width:480px){
+    .spec-row{ grid-template-columns:1fr; }
+    .contact-card{ flex-direction:column; align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="nameplate">
+    <svg class="gear" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 4l2.6 5.6 6-2.4 0.6 6.5 6.5 0.6-2.4 6 5.6 2.6-5.6 2.6 2.4 6-6.5 0.6-0.6 6.5-6-2.4L24 44l-2.6-5.6-6 2.4-0.6-6.5-6.5-0.6 2.4-6L5 24l5.6-2.6-2.4-6 6.5-0.6 0.6-6.5 6 2.4L24 4z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+      <circle cx="24" cy="24" r="7.5" stroke="currentColor" stroke-width="2.4"/>
+    </svg>
+    <div class="wordmark">13115 Robotics</div>
+  </div>
+  <div class="docmeta">
+    <span>Privacy &amp; Support</span>
+    <span>Task Tracker App</span>
+    <span>Rev 2026-09-05</span>
+  </div>
+
+  <p class="intro">
+    This page covers the internal task-tracking app used by <strong>FTC Robotics Team 13115</strong>
+    to assign, accept, and track build-season work. It only handles what's needed to run the team's
+    task board — nothing here is sold, shared with advertisers, or used outside the team.
+  </p>
+
+  <section aria-labelledby="collect-h">
+    <div class="section-label">Data we collect</div>
+    <h2 id="collect-h">What the app stores</h2>
+    <dl class="spec-list">
+      <div class="spec-row">
+        <dt>Name &amp; email</dt>
+        <dd>From your Google sign-in — used to identify you on the team roster and on tasks you create or are assigned.</dd>
+      </div>
+      <div class="spec-row">
+        <dt>Subteam &amp; role</dt>
+        <dd>Mechanical, programming, outreach, or strategy, plus whether you're a captain — set once during onboarding.</dd>
+      </div>
+      <div class="spec-row">
+        <dt>Task activity</dt>
+        <dd>Tasks you create, accept, decline, or complete, and any notes you leave — for example handoff notes when backing out of a task.</dd>
+      </div>
+      <div class="spec-row">
+        <dt>Push notification token</dt>
+        <dd>A device identifier used only to deliver task and reminder alerts to your phone.</dd>
+      </div>
+      <div class="spec-row">
+        <dt>Sign-in activity</dt>
+        <dd>Timestamps of when you sign in, used for the team's login-activity log.</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="use-h">
+    <div class="section-label">How it's used</div>
+    <h2 id="use-h">Running the task board — nothing else</h2>
+    <p>
+      Everything above exists to assign and track build-season work, notify you about task changes,
+      and let captains manage the roster. None of it is sold, shared with advertisers, or used for
+      anything outside the team.
+    </p>
+  </section>
+
+  <section aria-labelledby="store-h">
+    <div class="section-label">Where it's stored</div>
+    <h2 id="store-h">A private team database</h2>
+    <p>
+      Data lives in a private Azure SQL database operated for this team — it isn't public or
+      indexed anywhere. It's kept for as long as you're an active team member and removed on
+      request.
+    </p>
+  </section>
+
+  <section aria-labelledby="rights-h">
+    <div class="section-label">Your rights</div>
+    <h2 id="rights-h">Access, correction, deletion</h2>
+    <p>
+      You can ask to see, correct, or delete your data, or have your account removed from the
+      team, at any time — just email the contact below.
+    </p>
+  </section>
+
+  <section aria-labelledby="contact-h">
+    <div class="section-label">Contact</div>
+    <h2 id="contact-h">Questions, bugs, privacy requests</h2>
+    <div class="contact-card">
+      <p>For anything about the app or your data, reach the team directly.</p>
+      <a class="contact-link" href="mailto:akotilingala@gmail.com">akotilingala@gmail.com</a>
+    </div>
+    <p class="muted" style="margin-top:16px;">
+      This app is used internally by FTC Team 13115 and is not available on the public App Store.
+    </p>
+  </section>
+
+  <footer>
+    <span>13115 Robotics · Task Tracker</span>
+    <span>Rev 2026-09-05</span>
+  </footer>
+</div>
+
+</body>
+</html>
