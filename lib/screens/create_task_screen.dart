@@ -71,14 +71,22 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
           ),
           const SizedBox(height: 12),
           if (isCaptain)
-            DropdownButtonFormField<String?>(
-              initialValue: _assigneeId,
-              decoration: const InputDecoration(labelText: 'Assign to'),
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('Leave open (anyone can claim)')),
-                ...repo.users.map((u) => DropdownMenuItem<String?>(value: u.id, child: Text(u.name))),
-              ],
-              onChanged: (v) => setState(() => _assigneeId = v),
+            LayoutBuilder(
+              builder: (context, constraints) => DropdownMenu<String?>(
+                width: constraints.maxWidth,
+                initialSelection: _assigneeId,
+                label: const Text('Assign to'),
+                enableFilter: true,
+                requestFocusOnTap: true,
+                dropdownMenuEntries: [
+                  const DropdownMenuEntry<String?>(
+                    value: null,
+                    label: 'Leave open (anyone can claim)',
+                  ),
+                  ...repo.users.map((u) => DropdownMenuEntry<String?>(value: u.id, label: u.name)),
+                ],
+                onSelected: (v) => setState(() => _assigneeId = v),
+              ),
             )
           else
             Container(

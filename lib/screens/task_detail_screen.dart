@@ -423,24 +423,26 @@ class _CaptainReassignSection extends StatelessWidget {
         children: [
           const Text('Reassign this task', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: selection,
-                  decoration: const InputDecoration(labelText: 'Team member'),
-                  items: repo.users
-                      .map((u) => DropdownMenuItem(value: u.id, child: Text(u.name)))
-                      .toList(),
-                  onChanged: onSelectionChanged,
-                ),
-              ),
-              const SizedBox(width: 12),
-              FilledButton(
-                onPressed: selection == null ? null : () => onAssign(selection!),
-                child: const Text('Assign'),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) => DropdownMenu<String>(
+              width: constraints.maxWidth,
+              initialSelection: selection,
+              label: const Text('Team member'),
+              enableFilter: true,
+              requestFocusOnTap: true,
+              dropdownMenuEntries: repo.users
+                  .map((u) => DropdownMenuEntry(value: u.id, label: u.name))
+                  .toList(),
+              onSelected: onSelectionChanged,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              onPressed: selection == null ? null : () => onAssign(selection!),
+              child: const Text('Assign'),
+            ),
           ),
         ],
       ),
