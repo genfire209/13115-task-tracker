@@ -8,6 +8,16 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 class NotificationService {
   static Future<void> initializeFirebase() async {
     await Firebase.initializeApp();
+    // Without this, iOS silently delivers foreground pushes to onMessage
+    // with no system banner — only background/terminated ones show by
+    // default. This makes foreground behave the same as background.
+    if (Platform.isIOS) {
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
   }
 
   /// Requests notification permission (iOS requires this explicitly) and
