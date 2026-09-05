@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/task.dart';
+import '../models/user.dart';
+import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 
@@ -16,9 +18,36 @@ class CreateTaskScreen extends StatefulWidget {
 class _CreateTaskScreenState extends State<CreateTaskScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
-  final _assigneeController = TextEditingController();
+  final ApiService _api = ApiService();
+
   TaskCategory _category = TaskCategory.mechanical;
   DateTime _dueDate = DateTime.now().add(const Duration(days: 7));
+  String? _assigneeId; // null = leave open
+
+  List<AppUser> _users = [];
+  bool _loadingUsers = true;
+  String? _usersError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUsers();
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      final users = await _api.fetchUsers();
+      setState(() {
+        _users = users;
+        _loadingUsers = false;
+      });
+    } catch (e) {
+      setState(() {
+        _usersError = e.toString();
+        _loadingUsers = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +79,19 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
             onChanged: (v) => setState(() => _category = v!),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _assigneeController,
-            decoration: const InputDecoration(
-              labelText: 'Assign to (leave blank to leave it open)',
+          if (_loadingUsers) const LinearProgressIndicator(),
+          if (_usersError != null)
+            Text('Could not load team members: $_usersError', style: const TextStyle(color: Colors.red)),
+          if (!_loadingUsers && _usersError == null)
+            DropdownButtonFormField<String?>(
+              initialValue: _assigneeId,
+              decoration: const InputDecoration(labelText: 'Assign to'),
+              items: [
+                const DropdownMenuItem<String?>(value: null, child: Text('Leave open (anyone can claim)')),
+                ..._users.map((u) => DropdownMenuItem<String?>(value: u.id, child: Text(u.name))),
+              ],
+              onChanged: (v) => setState(() => _assigneeId = v),
             ),
-          ),
           const SizedBox(height: 12),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -79,10 +115,8 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 title: _titleController.text.trim(),
                 description: _descController.text.trim(),
                 category: _category,
-                createdBy: user.name,
-                assignedTo: _assigneeController.text.trim().isEmpty
-                    ? null
-                    : _assigneeController.text.trim(),
+                createdBy: user.id,
+                assignedTo: _assigneeId,
                 dueDate: _dueDate,
               );
               Navigator.pop(context);

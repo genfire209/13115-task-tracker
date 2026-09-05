@@ -25,6 +25,9 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TaskRepository>().loadAll();
+    });
   }
 
   @override
@@ -37,7 +40,7 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
     List<Task> filterFor(TaskCategory category) {
       var tasks = repo.tasks.where((t) => t.category == category);
       if (_myTasksOnly) {
-        tasks = tasks.where((t) => t.assignedTo == user.name);
+        tasks = tasks.where((t) => t.assignedTo == user.id);
       }
       return tasks.toList();
     }
@@ -51,6 +54,10 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
             tooltip: isCaptain ? 'Viewing as Captain (tap to switch)' : 'Viewing as Member (tap to switch)',
             icon: Icon(isCaptain ? Icons.shield : Icons.person),
             onPressed: auth.toggleRoleForTesting,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: repo.loadAll,
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -73,6 +80,15 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
             value: _myTasksOnly,
             onChanged: (v) => setState(() => _myTasksOnly = v),
           ),
+          if (repo.isLoading) const LinearProgressIndicator(),
+          if (repo.loadError != null)
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                'Could not load tasks: ${repo.loadError}',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
