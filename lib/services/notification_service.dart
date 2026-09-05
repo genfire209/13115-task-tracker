@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -29,7 +30,9 @@ class NotificationService {
       badge: true,
       sound: true,
     );
+    debugPrint('[push] permission status: ${settings.authorizationStatus}');
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
+      debugPrint('[push] permission denied, not registering');
       return null;
     }
 
@@ -39,14 +42,20 @@ class NotificationService {
     if (Platform.isIOS) {
       String? apnsToken = await messaging.getAPNSToken();
       var attempts = 0;
-      while (apnsToken == null && attempts < 10) {
+      while (apnsToken == null && attempts < 15) {
         await Future.delayed(const Duration(seconds: 1));
         apnsToken = await messaging.getAPNSToken();
         attempts++;
       }
-      if (apnsToken == null) return null;
+      debugPrint('[push] APNS token after $attempts attempt(s): $apnsToken');
+      if (apnsToken == null) {
+        debugPrint('[push] giving up waiting for APNS token');
+        return null;
+      }
     }
 
-    return messaging.getToken();
+    final fcmToken = await messaging.getToken();
+    debugPrint('[push] FCM token: $fcmToken');
+    return fcmToken;
   }
 }

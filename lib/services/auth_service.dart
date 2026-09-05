@@ -39,6 +39,9 @@ class AuthService extends ChangeNotifier {
       final token = await NotificationService.requestPermissionAndGetToken();
       if (token != null && _currentUser != null) {
         await _api.setPushToken(_currentUser!.id, token);
+        debugPrint('[push] token registered with backend for ${_currentUser!.id}');
+      } else {
+        debugPrint('[push] skipping backend registration (token=$token, user=${_currentUser?.id})');
       }
     } catch (e) {
       debugPrint('Could not register push token: $e');
