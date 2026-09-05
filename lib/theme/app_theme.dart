@@ -27,6 +27,38 @@ class AppTheme {
   static const categoryProgramming = Color(0xFFA78BFA);
   static const categoryStrategy = Color(0xFFFBBF24);
 
+  // Shared rounded style for `DropdownMenu` (used for member pickers), since
+  // it doesn't automatically pick up the ambient `inputDecorationTheme` the
+  // way `TextField`/`DropdownButtonFormField` do.
+  static final dropdownInputDecorationTheme = InputDecorationTheme(
+    filled: true,
+    fillColor: surfaceVariant,
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: BorderSide.none,
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: outline),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(12),
+      borderSide: const BorderSide(color: primary, width: 1.5),
+    ),
+    labelStyle: const TextStyle(color: onSurfaceMuted),
+    hintStyle: const TextStyle(color: onSurfaceMuted),
+  );
+
+  static final dropdownMenuStyle = MenuStyle(
+    backgroundColor: const WidgetStatePropertyAll(surface),
+    shape: WidgetStatePropertyAll(
+      RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: outline),
+      ),
+    ),
+  );
+
   static ThemeData get dark {
     final colorScheme = const ColorScheme.dark(
       brightness: Brightness.dark,
@@ -101,6 +133,10 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(color: onSurfaceMuted),
         hintStyle: const TextStyle(color: onSurfaceMuted),
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        inputDecorationTheme: dropdownInputDecorationTheme,
+        menuStyle: dropdownMenuStyle,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(

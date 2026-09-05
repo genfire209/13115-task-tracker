@@ -78,6 +78,8 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                 label: const Text('Assign to'),
                 enableFilter: true,
                 requestFocusOnTap: true,
+                inputDecorationTheme: AppTheme.dropdownInputDecorationTheme,
+                menuStyle: AppTheme.dropdownMenuStyle,
                 dropdownMenuEntries: [
                   const DropdownMenuEntry<String?>(
                     value: null,
