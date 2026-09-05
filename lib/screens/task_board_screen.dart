@@ -23,6 +23,7 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   bool _myTasksOnly = false;
+  bool _pendingOnly = true;
 
   @override
   void initState() {
@@ -44,6 +45,9 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
       var tasks = category == null ? repo.tasks : repo.tasks.where((t) => t.category == category);
       if (_myTasksOnly) {
         tasks = tasks.where((t) => t.assignedTo == user.id);
+      }
+      if (_pendingOnly) {
+        tasks = tasks.where((t) => t.status != TaskStatus.completed);
       }
       return tasks.toList();
     }
@@ -95,6 +99,12 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
             title: const Text('My tasks only'),
             value: _myTasksOnly,
             onChanged: (v) => setState(() => _myTasksOnly = v),
+          ),
+          SwitchListTile(
+            title: const Text('Pending only'),
+            subtitle: const Text('Hide completed tasks'),
+            value: _pendingOnly,
+            onChanged: (v) => setState(() => _pendingOnly = v),
           ),
           if (repo.isLoading) const LinearProgressIndicator(),
           if (repo.loadError != null)
