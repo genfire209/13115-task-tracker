@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
+import '../widgets/gear_spinner.dart';
 
 /// Shows login activity. Captains see every team member's; everyone else
 /// sees only their own (the backend scopes the response by requesterId).
@@ -32,7 +33,7 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Login Activity')),
       body: loginLog == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: GearSpinner(color: AppTheme.primary))
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -42,20 +43,30 @@ class _LoginActivityScreenState extends State<LoginActivityScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (loginLog.accounts.isEmpty)
-                  const Text('No login activity yet.', style: TextStyle(color: AppTheme.onSurfaceMuted))
+                  const Text(
+                    'No login activity yet.',
+                    style: TextStyle(color: AppTheme.onSurfaceMuted),
+                  )
                 else
-                  ...loginLog.accounts.map((a) => Card(
-                        child: ListTile(
-                          title: Text(a.email),
-                          subtitle: Text(a.name),
-                          trailing: Text(
-                            a.lastLoginAt != null
-                                ? DateFormat.MMMd().add_jm().format(a.lastLoginAt!)
-                                : 'never',
-                            style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 12),
+                  ...loginLog.accounts.map(
+                    (a) => Card(
+                      child: ListTile(
+                        title: Text(a.email),
+                        subtitle: Text(a.name),
+                        trailing: Text(
+                          a.lastLoginAt != null
+                              ? DateFormat.MMMd().add_jm().format(
+                                  a.lastLoginAt!,
+                                )
+                              : 'never',
+                          style: const TextStyle(
+                            color: AppTheme.onSurfaceMuted,
+                            fontSize: 12,
                           ),
                         ),
-                      )),
+                      ),
+                    ),
+                  ),
               ],
             ),
     );

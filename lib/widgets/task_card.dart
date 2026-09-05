@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/task.dart';
 import '../theme/app_theme.dart';
+import 'pulsing_badge.dart';
 
 String statusLabel(TaskStatus status) {
   switch (status) {
@@ -37,14 +38,16 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overdue = task.dueDate.isBefore(DateTime.now()) &&
+    final overdue =
+        task.dueDate.isBefore(DateTime.now()) &&
         task.status != TaskStatus.completed;
     final categoryColor = AppTheme.categoryColor(task.category);
     final assignee = task.assignedTo == null
         ? null
         : (nameFor != null ? nameFor!(task.assignedTo!) : task.assignedTo!);
     final categoryName = task.category.name;
-    final categoryLabel = categoryName[0].toUpperCase() + categoryName.substring(1);
+    final categoryLabel =
+        categoryName[0].toUpperCase() + categoryName.substring(1);
 
     return Card(
       child: InkWell(
@@ -82,34 +85,51 @@ class TaskCard extends StatelessWidget {
                     ],
                     Text(
                       task.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     if (assignee != null)
-                      Text('Assigned: $assignee',
-                          style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 13)),
+                      Text(
+                        'Assigned: $assignee',
+                        style: const TextStyle(
+                          color: AppTheme.onSurfaceMuted,
+                          fontSize: 13,
+                        ),
+                      ),
                     Text(
                       'Due ${DateFormat.yMMMd().format(task.dueDate)}',
                       style: TextStyle(
-                        color: overdue ? AppTheme.statusDeclined : AppTheme.onSurfaceMuted,
+                        color: overdue
+                            ? AppTheme.statusDeclined
+                            : AppTheme.onSurfaceMuted,
                         fontSize: 13,
-                        fontWeight: overdue ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: overdue
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              Chip(
-                label: Text(statusLabel(task.status)),
-                backgroundColor: AppTheme.statusColor(task.status).withValues(alpha: 0.18),
-                labelStyle: TextStyle(
-                  color: AppTheme.statusColor(task.status),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+              PulsingBadge(
+                active: task.status == TaskStatus.pendingAcceptance,
+                child: Chip(
+                  label: Text(statusLabel(task.status)),
+                  backgroundColor: AppTheme.statusColor(
+                    task.status,
+                  ).withValues(alpha: 0.18),
+                  labelStyle: TextStyle(
+                    color: AppTheme.statusColor(task.status),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                padding: EdgeInsets.zero,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ],
           ),

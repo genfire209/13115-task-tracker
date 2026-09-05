@@ -65,7 +65,8 @@ class AppTheme {
       ).apply(bodyColor: onSurface, displayColor: onSurface),
       cardTheme: CardThemeData(
         color: surface,
-        elevation: 0,
+        elevation: 6,
+        shadowColor: Colors.black.withValues(alpha: 0.45),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: outline),
@@ -74,7 +75,11 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: surfaceVariant,
-        labelStyle: const TextStyle(color: onSurface, fontSize: 12, fontWeight: FontWeight.w600),
+        labelStyle: const TextStyle(
+          color: onSurface,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         side: BorderSide.none,
@@ -102,7 +107,9 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
@@ -111,7 +118,9 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
@@ -120,7 +129,9 @@ class AppTheme {
           foregroundColor: onSurface,
           side: const BorderSide(color: outline),
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
