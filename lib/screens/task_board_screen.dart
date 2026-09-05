@@ -71,14 +71,15 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
                 ),
               ),
             ),
-          IconButton(
-            tooltip: 'Team Roster',
-            icon: const Icon(Icons.people_outline),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TeamRosterScreen()),
+          if (!isCaptain)
+            IconButton(
+              tooltip: 'Team Roster',
+              icon: const Icon(Icons.people_outline),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TeamRosterScreen()),
+              ),
             ),
-          ),
           IconButton(
             tooltip: 'Login Activity',
             icon: const Icon(Icons.history),
