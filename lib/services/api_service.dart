@@ -2,14 +2,29 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/task.dart';
+import '../models/task_event.dart';
 import '../models/extension_request.dart';
+import '../models/user.dart';
 
-/// Thin wrapper around the Azure Functions backend.
-///
-/// TODO: set [baseUrl] to your deployed Azure Function App, e.g.
-/// "https://task-tracker-13115.azurewebsites.net/api"
+/// Thin wrapper around the deployed Azure App Service backend.
 class ApiService {
-  static const String baseUrl = 'https://REPLACE-ME.azurewebsites.net/api';
+  static const String baseUrl = 'https://app-13115-tasktracker.azurewebsites.net/api';
+
+  Future<AppUser> login({
+    required String provider,
+    required String idToken,
+    String? name,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'provider': provider, 'idToken': idToken, 'name': name}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Login failed: ${res.body}');
+    }
+    return AppUser.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
 
   Future<List<Task>> fetchTasks() async {
     final res = await http.get(Uri.parse('$baseUrl/tasks'));
@@ -17,44 +32,101 @@ class ApiService {
     return data.map((j) => Task.fromJson(j as Map<String, dynamic>)).toList();
   }
 
-  Future<Task> createTask(Task task) async {
+  Future<List<TaskEvent>> fetchTaskEvents(String taskId) async {
+    final res = await http.get(Uri.parse('$baseUrl/tasks/$taskId/events'));
+    final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
+    return data.map((j) => TaskEvent.fromJson(j as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<AppUser>> fetchUsers() async {
+    final res = await http.get(Uri.parse('$baseUrl/users'));
+    final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
+    return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
+  }
+
+  Future<Task> createTask({
+    required String title,
+    required String description,
+    required TaskCategory category,
+    required String createdBy,
+    String? assignedTo,
+    required DateTime dueDate,
+  }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tasks'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(task.toJson()),
+      body: jsonEncode({
+        'title': title,
+        'description': description,
+        'category': categoryToString(category),
+        'createdBy': createdBy,
+        'assignedTo': assignedTo,
+        'dueDate': dueDate.toIso8601String(),
+      }),
     );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to create task: ${res.body}');
+    }
     return Task.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
-  Future<void> updateTaskStatus({
+  /// action: 'claim' | 'accept' | 'decline' | 'complete'
+  Future<void> updateTask({
     required String taskId,
-    required String status,
+    required String action,
+    required String actorId,
     String? reason,
   }) async {
-    await http.patch(
+    final res = await http.patch(
       Uri.parse('$baseUrl/tasks/$taskId'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'status': status, 'reason': reason}),
+      body: jsonEncode({'action': action, 'actorId': actorId, 'reason': reason}),
     );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to update task: ${res.body}');
+    }
   }
 
-  Future<ExtensionRequest> requestExtension(ExtensionRequest req) async {
+  Future<ExtensionRequest> requestExtension({
+    required String taskId,
+    required String requestedBy,
+    required DateTime newDueDate,
+    required String reason,
+  }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/extension-requests'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(req.toJson()),
+      body: jsonEncode({
+        'taskId': taskId,
+        'requestedBy': requestedBy,
+        'newDueDate': newDueDate.toIso8601String(),
+        'reason': reason,
+      }),
     );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to request extension: ${res.body}');
+    }
     return ExtensionRequest.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  Future<List<ExtensionRequest>> fetchPendingExtensionRequests() async {
+    final res = await http.get(Uri.parse('$baseUrl/extension-requests?status=pending'));
+    final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
+    return data.map((j) => ExtensionRequest.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<void> decideExtension({
     required String extensionId,
     required bool approve,
+    required String actorId,
   }) async {
-    await http.patch(
+    final res = await http.patch(
       Uri.parse('$baseUrl/extension-requests/$extensionId'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'status': approve ? 'approved' : 'denied'}),
+      body: jsonEncode({'status': approve ? 'approved' : 'denied', 'actorId': actorId}),
     );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to decide extension: ${res.body}');
+    }
   }
 }

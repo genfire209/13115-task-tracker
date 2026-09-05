@@ -8,9 +8,24 @@ import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../widgets/task_card.dart';
 
-class TaskDetailScreen extends StatelessWidget {
+class TaskDetailScreen extends StatefulWidget {
   final String taskId;
   const TaskDetailScreen({super.key, required this.taskId});
+
+  @override
+  State<TaskDetailScreen> createState() => _TaskDetailScreenState();
+}
+
+class _TaskDetailScreenState extends State<TaskDetailScreen> {
+  String get taskId => widget.taskId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<TaskRepository>().loadEventsForTask(taskId);
+    });
+  }
 
   Future<String?> _promptForReason(BuildContext context, String title) {
     final controller = TextEditingController();
@@ -53,7 +68,7 @@ class TaskDetailScreen extends StatelessWidget {
       builder: (context, repo, auth, _) {
         final task = repo.tasks.firstWhere((t) => t.id == taskId);
         final user = auth.currentUser!;
-        final isAssignee = task.assignedTo == user.name;
+        final isAssignee = task.assignedTo == user.id; // assignedTo stores the user's id (email)
         final isCaptain = user.role == UserRole.captain;
         final events = repo.eventsFor(taskId);
         final pendingExtensions = repo.pendingExtensionRequests
@@ -82,7 +97,7 @@ class TaskDetailScreen extends StatelessWidget {
               // --- Actions available to the current user ---
               if (task.status == TaskStatus.open)
                 FilledButton(
-                  onPressed: () => repo.claimTask(taskId, user.name),
+                  onPressed: () => repo.claimTask(taskId, user.id),
                   child: const Text('Claim this task'),
                 ),
 
@@ -91,7 +106,7 @@ class TaskDetailScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: FilledButton(
-                        onPressed: () => repo.acceptTask(taskId, user.name),
+                        onPressed: () => repo.acceptTask(taskId, user.id),
                         child: const Text('Accept'),
                       ),
                     ),
@@ -102,7 +117,7 @@ class TaskDetailScreen extends StatelessWidget {
                           final reason = await _promptForReason(
                               context, 'Why are you declining?');
                           if (reason != null && reason.isNotEmpty) {
-                            repo.declineTask(taskId, user.name, reason);
+                            repo.declineTask(taskId, user.id, reason);
                           }
                         },
                         child: const Text('Decline'),
@@ -116,7 +131,7 @@ class TaskDetailScreen extends StatelessWidget {
                       task.status == TaskStatus.inProgress) &&
                   isAssignee) ...[
                 FilledButton(
-                  onPressed: () => repo.completeTask(taskId, user.name),
+                  onPressed: () => repo.completeTask(taskId, user.id),
                   child: const Text('Mark Completed'),
                 ),
                 const SizedBox(height: 8),
@@ -131,7 +146,7 @@ class TaskDetailScreen extends StatelessWidget {
                     if (reason != null && reason.isNotEmpty) {
                       repo.requestExtension(
                         taskId: taskId,
-                        requestedBy: user.name,
+                        requestedBy: user.id,
                         newDueDate: newDate,
                         reason: reason,
                       );
@@ -155,12 +170,12 @@ class TaskDetailScreen extends StatelessWidget {
                             IconButton(
                               icon: const Icon(Icons.check, color: Colors.green),
                               onPressed: () =>
-                                  repo.decideExtension(r.id, true, user.name),
+                                  repo.decideExtension(r.id, true, user.id),
                             ),
                             IconButton(
                               icon: const Icon(Icons.close, color: Colors.red),
                               onPressed: () =>
-                                  repo.decideExtension(r.id, false, user.name),
+                                  repo.decideExtension(r.id, false, user.id),
                             ),
                           ],
                         ),
