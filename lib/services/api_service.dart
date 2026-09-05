@@ -96,6 +96,17 @@ class ApiService {
     }
   }
 
+  Future<void> setPushToken(String userId, String pushToken) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'pushToken': pushToken}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to register push token: ${res.body}');
+    }
+  }
+
   Future<void> approveUser(String userId) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
