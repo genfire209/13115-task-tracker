@@ -5,8 +5,11 @@ import '../models/task.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
+import '../theme/app_theme.dart';
 import '../widgets/task_card.dart';
+import 'captain_dashboard_screen.dart';
 import 'create_task_screen.dart';
+import 'login_activity_screen.dart';
 import 'task_detail_screen.dart';
 
 class TaskBoardScreen extends StatefulWidget {
@@ -37,8 +40,8 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
     final user = auth.currentUser!;
     final isCaptain = user.role == UserRole.captain;
 
-    List<Task> filterFor(TaskCategory category) {
-      var tasks = repo.tasks.where((t) => t.category == category);
+    List<Task> filterFor(TaskCategory? category) {
+      var tasks = category == null ? repo.tasks : repo.tasks.where((t) => t.category == category);
       if (_myTasksOnly) {
         tasks = tasks.where((t) => t.assignedTo == user.id);
       }
@@ -49,11 +52,22 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
       appBar: AppBar(
         title: const Text('13115 Task Tracker'),
         actions: [
-          // Dev-only role switch until real roles come from the backend.
+          if (isCaptain)
+            IconButton(
+              tooltip: 'Captain Portal',
+              icon: const Icon(Icons.admin_panel_settings_outlined),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CaptainDashboardScreen()),
+              ),
+            ),
           IconButton(
-            tooltip: isCaptain ? 'Viewing as Captain (tap to switch)' : 'Viewing as Member (tap to switch)',
-            icon: Icon(isCaptain ? Icons.shield : Icons.person),
-            onPressed: auth.toggleRoleForTesting,
+            tooltip: 'Login Activity',
+            icon: const Icon(Icons.history),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginActivityScreen()),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -64,14 +78,16 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
             onPressed: auth.signOut,
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Mechanical'),
-            Tab(text: 'Outreach'),
-            Tab(text: 'Programming'),
-          ],
-        ),
+        bottom: isCaptain
+            ? TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Mechanical'),
+                  Tab(text: 'Outreach'),
+                  Tab(text: 'Programming'),
+                ],
+              )
+            : null,
       ),
       body: Column(
         children: [
@@ -86,18 +102,24 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
               padding: const EdgeInsets.all(12),
               child: Text(
                 'Could not load tasks: ${repo.loadError}',
-                style: const TextStyle(color: Colors.red),
+                style: const TextStyle(color: AppTheme.statusDeclined),
               ),
             ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _TaskList(tasks: filterFor(TaskCategory.mechanical)),
-                _TaskList(tasks: filterFor(TaskCategory.outreach)),
-                _TaskList(tasks: filterFor(TaskCategory.programming)),
-              ],
-            ),
+            child: isCaptain
+                ? TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _TaskList(tasks: filterFor(TaskCategory.mechanical), nameFor: repo.nameFor),
+                      _TaskList(tasks: filterFor(TaskCategory.outreach), nameFor: repo.nameFor),
+                      _TaskList(tasks: filterFor(TaskCategory.programming), nameFor: repo.nameFor),
+                    ],
+                  )
+                : _TaskList(
+                    tasks: filterFor(null),
+                    nameFor: repo.nameFor,
+                    showCategoryLabel: true,
+                  ),
           ),
         ],
       ),
@@ -115,12 +137,16 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
 
 class _TaskList extends StatelessWidget {
   final List<Task> tasks;
-  const _TaskList({required this.tasks});
+  final String Function(String) nameFor;
+  final bool showCategoryLabel;
+  const _TaskList({required this.tasks, required this.nameFor, this.showCategoryLabel = false});
 
   @override
   Widget build(BuildContext context) {
     if (tasks.isEmpty) {
-      return const Center(child: Text('No tasks here yet.'));
+      return const Center(
+        child: Text('No tasks here yet.', style: TextStyle(color: AppTheme.onSurfaceMuted)),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -129,6 +155,8 @@ class _TaskList extends StatelessWidget {
         final task = tasks[i];
         return TaskCard(
           task: task,
+          nameFor: nameFor,
+          showCategoryLabel: showCategoryLabel,
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
