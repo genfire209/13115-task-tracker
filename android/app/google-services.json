@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "842144934667",
+    "project_id": "robotics-507704",
+    "storage_bucket": "robotics-507704.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:842144934667:android:22c481912800dc6ea9500e",
+        "android_client_info": {
+          "package_name": "com.robotics13115.task_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "842144934667-s17d17dsjagqg8qkjel9ankn4ndcbip4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoQKfwDiItBiRCEG1Fin6FwXo8aL5t1UI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "842144934667-s17d17dsjagqg8qkjel9ankn4ndcbip4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "842144934667-hdv9en31ca9q0h93cahgvmo2bqej6408.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.robotics13115.taskTracker"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
