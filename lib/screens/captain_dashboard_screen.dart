@@ -68,11 +68,13 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Edit name'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Full name'),
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: controller,
+            decoration: const InputDecoration(labelText: 'Full name'),
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+          ),
         ),
         actions: [
           TextButton(

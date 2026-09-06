@@ -35,11 +35,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(title),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: 'Reason'),
-          autofocus: true,
-          maxLines: 3,
+        content: SingleChildScrollView(
+          child: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: 'Reason'),
+            autofocus: true,
+            maxLines: 3,
+          ),
         ),
         actions: [
           TextButton(
@@ -65,24 +67,26 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Can't complete this task?"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(labelText: 'Why can\'t you finish it?'),
-              autofocus: true,
-              maxLines: 2,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: progressController,
-              decoration: const InputDecoration(
-                labelText: 'Progress so far / notes for whoever takes over',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(labelText: 'Why can\'t you finish it?'),
+                autofocus: true,
+                maxLines: 2,
               ),
-              maxLines: 3,
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: progressController,
+                decoration: const InputDecoration(
+                  labelText: 'Progress so far / notes for whoever takes over',
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
