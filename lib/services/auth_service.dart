@@ -9,8 +9,12 @@ import 'notification_service.dart';
 
 /// Handles Google sign-in and exposes the current logged-in user.
 class AuthService extends ChangeNotifier {
+  // serverClientId requests an id token audienced to the shared web OAuth
+  // client rather than a platform-specific one, so the same token can be
+  // verified server-side regardless of whether it came from iOS or Android.
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    serverClientId: '842144934667-s17d17dsjagqg8qkjel9ankn4ndcbip4.apps.googleusercontent.com',
   );
   final ApiService _api = ApiService();
 
