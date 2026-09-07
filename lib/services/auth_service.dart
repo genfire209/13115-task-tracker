@@ -76,6 +76,15 @@ class AuthService extends ChangeNotifier {
     final account = await _googleSignIn.signIn();
     if (account == null) return; // user cancelled
 
+    // On a shared device (e.g. siblings taking turns), the account signing
+    // in now is about to start using this device's push token — clear it
+    // from whoever used it last, or both accounts would receive each
+    // other's notifications on this one physical device.
+    final previousEmail = await _secureStorage.read(key: _kExpectedAccountKey);
+    if (previousEmail != null && previousEmail != account.email) {
+      unawaited(_clearTokenBestEffort(previousEmail));
+    }
+
     final auth = await account.authentication;
     _currentUser = await _api.login(
       provider: 'google',
@@ -85,6 +94,14 @@ class AuthService extends ChangeNotifier {
     await _secureStorage.write(key: _kExpectedAccountKey, value: account.email);
     notifyListeners();
     unawaited(_registerPushToken());
+  }
+
+  Future<void> _clearTokenBestEffort(String userId) async {
+    try {
+      await _api.clearPushToken(userId);
+    } catch (e) {
+      debugPrint('Could not clear previous account\'s push token: $e');
+    }
   }
 
   /// Best-effort: failures here (permission denied, no APNs token yet on a
@@ -120,6 +137,14 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    // Clear this device's token from the outgoing account right away, in
+    // case the device sits signed-out for a while before anyone else signs
+    // in — otherwise it would keep receiving that account's notifications
+    // in the meantime.
+    final outgoingUser = _currentUser;
+    if (outgoingUser != null) {
+      unawaited(_clearTokenBestEffort(outgoingUser.id));
+    }
     await _googleSignIn.signOut();
     _currentUser = null;
     notifyListeners();
