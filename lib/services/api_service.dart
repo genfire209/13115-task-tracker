@@ -107,6 +107,21 @@ class ApiService {
     }
   }
 
+  /// Used when a different account signs in on the same device (e.g. a
+  /// shared family phone) — the outgoing account's token has to be cleared
+  /// or they'd keep receiving pushes meant for whoever's using the device
+  /// now, since both would otherwise point at the same device token.
+  Future<void> clearPushToken(String userId) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'pushToken': null}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to clear push token: ${res.body}');
+    }
+  }
+
   Future<void> approveUser(String userId) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
