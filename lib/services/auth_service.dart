@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/user.dart';
 import 'api_service.dart';
 import 'notification_service.dart';
+
+const _kExpectedAccountKey = 'expected_google_account_email';
 
 /// Handles Google sign-in and exposes the current logged-in user.
 class AuthService extends ChangeNotifier {
@@ -17,6 +20,7 @@ class AuthService extends ChangeNotifier {
     serverClientId: '842144934667-s17d17dsjagqg8qkjel9ankn4ndcbip4.apps.googleusercontent.com',
   );
   final ApiService _api = ApiService();
+  final _secureStorage = const FlutterSecureStorage();
 
   AppUser? _currentUser;
   AppUser? get currentUser => _currentUser;
@@ -26,20 +30,39 @@ class AuthService extends ChangeNotifier {
   bool get isRestoring => _isRestoring;
 
   /// Called once at app startup. Google Sign-In keeps its own persisted
-  /// session (survives app updates and normal closes), so this lets a
-  /// returning member skip straight past the login screen without us having
-  /// to store anything ourselves.
+  /// session (survives app updates and normal closes), so this normally lets
+  /// a returning member skip straight past the login screen.
+  ///
+  /// On a device that's ever had more than one Google account signed into
+  /// this app (shared/test devices, or someone with both a personal and a
+  /// school account), the native SDK's silent restore isn't guaranteed to
+  /// return the account *this app* was last explicitly signed in as — it can
+  /// resurrect a different, previously-authorized one instead. We guard
+  /// against that by remembering which account we last explicitly signed in
+  /// as, and refusing to silently proceed as anyone else: if the restored
+  /// account doesn't match, we sign out of it and fall back to the login
+  /// screen, so at least the mismatch is visible instead of silently
+  /// operating as the wrong person.
   Future<void> tryRestoreSession() async {
     try {
       final account = await _googleSignIn.signInSilently();
       if (account != null) {
-        final auth = await account.authentication;
-        _currentUser = await _api.login(
-          provider: 'google',
-          idToken: auth.idToken ?? '',
-          name: account.displayName ?? account.email,
-        );
-        unawaited(_registerPushToken());
+        final expectedEmail = await _secureStorage.read(key: _kExpectedAccountKey);
+        if (expectedEmail != null && expectedEmail != account.email) {
+          debugPrint(
+            '[auth] silent restore returned ${account.email}, expected $expectedEmail — '
+            'signing out and requiring an explicit sign-in instead.',
+          );
+          await _googleSignIn.signOut();
+        } else {
+          final auth = await account.authentication;
+          _currentUser = await _api.login(
+            provider: 'google',
+            idToken: auth.idToken ?? '',
+            name: account.displayName ?? account.email,
+          );
+          unawaited(_registerPushToken());
+        }
       }
     } catch (e) {
       debugPrint('Silent sign-in failed: $e');
@@ -59,6 +82,7 @@ class AuthService extends ChangeNotifier {
       idToken: auth.idToken ?? '',
       name: account.displayName ?? account.email,
     );
+    await _secureStorage.write(key: _kExpectedAccountKey, value: account.email);
     notifyListeners();
     unawaited(_registerPushToken());
   }
