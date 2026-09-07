@@ -64,7 +64,7 @@ class _RootRouterState extends State<_RootRouter> {
     }
     if (!auth.isLoggedIn) return const LoginScreen();
     final user = auth.currentUser!;
-    if (user.subteam == null) return const OnboardingScreen();
+    if (user.subteams.isEmpty) return const OnboardingScreen();
     if (!user.approved) return const PendingApprovalScreen();
     return const TaskBoardScreen();
   }

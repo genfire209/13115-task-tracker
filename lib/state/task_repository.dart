@@ -74,6 +74,12 @@ class TaskRepository extends ChangeNotifier {
     await loadAll();
   }
 
+  /// A captain/admin changing someone else's subteam(s) from the roster.
+  Future<void> updateUserSubteams(String userId, List<Subteam> subteams) async {
+    await _api.updateSubteams(userId, subteams);
+    await loadAll();
+  }
+
   Future<void> loadPendingApprovals() async {
     _pendingApprovals = await _api.fetchPendingApprovals();
     notifyListeners();

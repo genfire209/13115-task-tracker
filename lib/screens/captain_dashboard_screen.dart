@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/subteam_multi_select.dart';
 import 'create_task_screen.dart';
 import 'login_activity_screen.dart';
 
@@ -93,6 +94,41 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
     }
   }
 
+  Future<void> _editSubteams(
+    TaskRepository repo,
+    String userId,
+    List<Subteam> currentSubteams,
+  ) async {
+    var selected = Set<Subteam>.from(currentSubteams);
+    final newSubteams = await showDialog<Set<Subteam>>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Edit subteams'),
+          content: SingleChildScrollView(
+            child: SubteamMultiSelect(
+              selected: selected,
+              onChanged: (next) => setDialogState(() => selected = next),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: selected.isEmpty ? null : () => Navigator.pop(ctx, selected),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (newSubteams != null) {
+      await repo.updateUserSubteams(userId, newSubteams.toList());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final repo = context.watch<TaskRepository>();
@@ -123,7 +159,7 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                 child: ListTile(
                   title: Text(u.name),
                   subtitle: Text(
-                    '${u.email}${u.subteam != null ? " · ${subteamLabel(u.subteam!)}" : ""}',
+                    '${u.email}${u.subteams.isNotEmpty ? " · ${subteamsLabel(u.subteams)}" : ""}',
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -202,8 +238,8 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
           ),
           ...repo.users.map((u) {
             final isSelf = u.id == context.read<AuthService>().currentUser!.id;
-            final avatarColor = u.subteam != null
-                ? AppTheme.subteamColor(u.subteam!)
+            final avatarColor = u.subteams.isNotEmpty
+                ? AppTheme.subteamColor(u.subteams.first)
                 : AppTheme.onSurfaceMuted;
             return Card(
               child: Padding(
@@ -245,9 +281,7 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                                 ),
                               ),
                               Text(
-                                u.subteam != null
-                                    ? subteamLabel(u.subteam!)
-                                    : 'Onboarding pending',
+                                subteamsLabel(u.subteams),
                                 style: const TextStyle(
                                   color: AppTheme.onSurfaceMuted,
                                   fontSize: 13,
@@ -264,6 +298,15 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                             color: AppTheme.onSurfaceMuted,
                           ),
                           onPressed: () => _editName(repo, u.id, u.name),
+                        ),
+                        IconButton(
+                          tooltip: 'Edit subteams',
+                          icon: const Icon(
+                            Icons.groups_2_outlined,
+                            size: 18,
+                            color: AppTheme.onSurfaceMuted,
+                          ),
+                          onPressed: () => _editSubteams(repo, u.id, u.subteams),
                         ),
                       ],
                     ),

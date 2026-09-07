@@ -61,17 +61,30 @@ class ApiService {
   Future<AppUser> completeProfile({
     required String userId,
     required String name,
-    required Subteam subteam,
+    required List<Subteam> subteams,
   }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'name': name, 'subteam': subteamToString(subteam)}),
+      body: jsonEncode({'name': name, 'subteams': subteams.map(subteamToString).toList()}),
     );
     if (res.statusCode >= 400) {
       throw Exception('Failed to complete profile: ${res.body}');
     }
     return fetchUserById(userId);
+  }
+
+  /// Used both for a captain/admin changing someone else's subteams and for
+  /// a member changing their own after onboarding.
+  Future<void> updateSubteams(String userId, List<Subteam> subteams) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'subteams': subteams.map(subteamToString).toList()}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to update subteams: ${res.body}');
+    }
   }
 
   Future<void> setUserRole({required String userId, required UserRole role}) async {
