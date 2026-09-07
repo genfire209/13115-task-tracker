@@ -43,12 +43,27 @@ String subteamLabel(Subteam s) {
   }
 }
 
+List<Subteam> subteamsFromJson(dynamic json) {
+  if (json == null) return [];
+  return (json as List<dynamic>)
+      .map((s) => subteamFromString(s as String?))
+      .whereType<Subteam>()
+      .toList();
+}
+
+/// A user with no subteam yet shows "Onboarding pending"; otherwise their
+/// subteam labels joined for display, e.g. "Mechanical, Outreach".
+String subteamsLabel(List<Subteam> subteams) {
+  if (subteams.isEmpty) return 'Onboarding pending';
+  return subteams.map(subteamLabel).join(', ');
+}
+
 class LoginLogEntry {
   final String id;
   final String name;
   final String email;
   final UserRole role;
-  final Subteam? subteam;
+  final List<Subteam> subteams;
   final DateTime? lastLoginAt;
 
   LoginLogEntry({
@@ -56,7 +71,7 @@ class LoginLogEntry {
     required this.name,
     required this.email,
     required this.role,
-    this.subteam,
+    this.subteams = const [],
     this.lastLoginAt,
   });
 
@@ -67,7 +82,7 @@ class LoginLogEntry {
       name: json['name'] as String,
       email: json['email'] as String,
       role: (json['role'] as String) == 'captain' ? UserRole.captain : UserRole.member,
-      subteam: subteamFromString(json['subteam'] as String?),
+      subteams: subteamsFromJson(json['subteams']),
       lastLoginAt: lastLogin != null ? DateTime.parse(lastLogin) : null,
     );
   }
@@ -95,7 +110,7 @@ class AppUser {
   final String email;
   final String authProvider; // "google" or "apple"
   final UserRole role;
-  final Subteam? subteam; // null = onboarding not complete yet
+  final List<Subteam> subteams; // empty = onboarding not complete yet
   final bool isAdmin; // full captain-level access, independent of the public role label
   final bool approved; // false = waiting on a captain/admin to let them in
 
@@ -105,7 +120,7 @@ class AppUser {
     required this.email,
     required this.authProvider,
     required this.role,
-    this.subteam,
+    this.subteams = const [],
     this.isAdmin = false,
     this.approved = true,
   });
@@ -123,19 +138,19 @@ class AppUser {
       role: (json['role'] as String) == 'captain'
           ? UserRole.captain
           : UserRole.member,
-      subteam: subteamFromString(json['subteam'] as String?),
+      subteams: subteamsFromJson(json['subteams']),
       isAdmin: json['isAdmin'] as bool? ?? false,
       approved: json['approved'] as bool? ?? true,
     );
   }
 
-  AppUser copyWith({String? name, Subteam? subteam}) => AppUser(
+  AppUser copyWith({String? name, List<Subteam>? subteams}) => AppUser(
         id: id,
         name: name ?? this.name,
         email: email,
         authProvider: authProvider,
         role: role,
-        subteam: subteam ?? this.subteam,
+        subteams: subteams ?? this.subteams,
         isAdmin: isAdmin,
         approved: approved,
       );
@@ -146,7 +161,7 @@ class AppUser {
         'email': email,
         'authProvider': authProvider,
         'role': role == UserRole.captain ? 'captain' : 'member',
-        'subteam': subteam != null ? subteamToString(subteam!) : null,
+        'subteams': subteams.map(subteamToString).toList(),
         'isAdmin': isAdmin,
         'approved': approved,
       };

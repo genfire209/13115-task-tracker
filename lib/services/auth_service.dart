@@ -120,10 +120,19 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> completeProfile({required String name, required Subteam subteam}) async {
+  Future<void> completeProfile({required String name, required List<Subteam> subteams}) async {
     final user = _currentUser;
     if (user == null) return;
-    _currentUser = await _api.completeProfile(userId: user.id, name: name, subteam: subteam);
+    _currentUser = await _api.completeProfile(userId: user.id, name: name, subteams: subteams);
+    notifyListeners();
+  }
+
+  /// Lets a member change their own subteam(s) any time after onboarding.
+  Future<void> updateMySubteams(List<Subteam> subteams) async {
+    final user = _currentUser;
+    if (user == null) return;
+    await _api.updateSubteams(user.id, subteams);
+    _currentUser = user.copyWith(subteams: subteams);
     notifyListeners();
   }
 
