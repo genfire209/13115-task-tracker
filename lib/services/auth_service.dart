@@ -73,6 +73,16 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signInWithGoogle() async {
+    // Force the native account picker instead of silently reusing whatever
+    // account this device last signed in as. Without this, tapping "Continue
+    // with Google" again after being removed/denied (or just wanting to
+    // switch users on a shared device) can silently re-authenticate as the
+    // same old account with no chooser shown at all — the sign-in "succeeds"
+    // from the SDK's point of view and then immediately fails against the
+    // backend with a banned/removed error, with no visible way to pick a
+    // different account. Signing out first clears that cached account so the
+    // picker always appears.
+    await _googleSignIn.signOut();
     final account = await _googleSignIn.signIn();
     if (account == null) return; // user cancelled
 
