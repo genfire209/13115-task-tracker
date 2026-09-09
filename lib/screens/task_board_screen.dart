@@ -8,6 +8,7 @@ import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/responsive_center.dart';
 import '../widgets/subteam_multi_select.dart';
 import '../widgets/task_card.dart';
 import 'captain_dashboard_screen.dart';
@@ -171,24 +172,32 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
                 ? TabBarView(
                     controller: _tabController,
                     children: [
-                      _TaskList(
-                        tasks: filterFor(TaskCategory.mechanical),
-                        nameFor: repo.nameFor,
+                      ResponsiveCenter(
+                        child: _TaskList(
+                          tasks: filterFor(TaskCategory.mechanical),
+                          nameFor: repo.nameFor,
+                        ),
                       ),
-                      _TaskList(
-                        tasks: filterFor(TaskCategory.outreach),
-                        nameFor: repo.nameFor,
+                      ResponsiveCenter(
+                        child: _TaskList(
+                          tasks: filterFor(TaskCategory.outreach),
+                          nameFor: repo.nameFor,
+                        ),
                       ),
-                      _TaskList(
-                        tasks: filterFor(TaskCategory.programming),
-                        nameFor: repo.nameFor,
+                      ResponsiveCenter(
+                        child: _TaskList(
+                          tasks: filterFor(TaskCategory.programming),
+                          nameFor: repo.nameFor,
+                        ),
                       ),
                     ],
                   )
-                : _TaskList(
-                    tasks: filterFor(null),
-                    nameFor: repo.nameFor,
-                    showCategoryLabel: true,
+                : ResponsiveCenter(
+                    child: _TaskList(
+                      tasks: filterFor(null),
+                      nameFor: repo.nameFor,
+                      showCategoryLabel: true,
+                    ),
                   ),
           ),
         ],
