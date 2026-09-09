@@ -58,52 +58,6 @@ String subteamsLabel(List<Subteam> subteams) {
   return subteams.map(subteamLabel).join(', ');
 }
 
-class LoginLogEntry {
-  final String id;
-  final String name;
-  final String email;
-  final UserRole role;
-  final List<Subteam> subteams;
-  final DateTime? lastLoginAt;
-
-  LoginLogEntry({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.role,
-    this.subteams = const [],
-    this.lastLoginAt,
-  });
-
-  factory LoginLogEntry.fromJson(Map<String, dynamic> json) {
-    final lastLogin = json['lastLoginAt'] as String?;
-    return LoginLogEntry(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      role: (json['role'] as String) == 'captain' ? UserRole.captain : UserRole.member,
-      subteams: subteamsFromJson(json['subteams']),
-      lastLoginAt: lastLogin != null ? DateTime.parse(lastLogin) : null,
-    );
-  }
-}
-
-class LoginLog {
-  final int accountCount;
-  final List<LoginLogEntry> accounts;
-
-  LoginLog({required this.accountCount, required this.accounts});
-
-  factory LoginLog.fromJson(Map<String, dynamic> json) {
-    return LoginLog(
-      accountCount: json['accountCount'] as int,
-      accounts: (json['accounts'] as List<dynamic>)
-          .map((j) => LoginLogEntry.fromJson(j as Map<String, dynamic>))
-          .toList(),
-    );
-  }
-}
-
 class AppUser {
   final String id;
   final String name;
@@ -113,6 +67,7 @@ class AppUser {
   final List<Subteam> subteams; // empty = onboarding not complete yet
   final bool isAdmin; // full captain-level access, independent of the public role label
   final bool approved; // false = waiting on a captain/admin to let them in
+  final bool isJunior; // freshman/junior team: only sees tasks assigned to them, no roster, no self-claiming
 
   AppUser({
     required this.id,
@@ -123,6 +78,7 @@ class AppUser {
     this.subteams = const [],
     this.isAdmin = false,
     this.approved = true,
+    this.isJunior = false,
   });
 
   /// True if this account should see captain-only tools, regardless of
@@ -141,10 +97,11 @@ class AppUser {
       subteams: subteamsFromJson(json['subteams']),
       isAdmin: json['isAdmin'] as bool? ?? false,
       approved: json['approved'] as bool? ?? true,
+      isJunior: json['isJunior'] as bool? ?? false,
     );
   }
 
-  AppUser copyWith({String? name, List<Subteam>? subteams}) => AppUser(
+  AppUser copyWith({String? name, List<Subteam>? subteams, bool? isJunior}) => AppUser(
         id: id,
         name: name ?? this.name,
         email: email,
@@ -153,6 +110,7 @@ class AppUser {
         subteams: subteams ?? this.subteams,
         isAdmin: isAdmin,
         approved: approved,
+        isJunior: isJunior ?? this.isJunior,
       );
 
   Map<String, dynamic> toJson() => {
@@ -164,5 +122,6 @@ class AppUser {
         'subteams': subteams.map(subteamToString).toList(),
         'isAdmin': isAdmin,
         'approved': approved,
+        'isJunior': isJunior,
       };
 }
