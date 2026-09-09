@@ -39,6 +39,11 @@ dependencies:
   http: ^1.2.2
   intl: ^0.19.0
   google_sign_in: ^6.2.2
+  # Direct deps (not just transitive via google_sign_in) because the web
+  # build renders Google's own button directly through these — see
+  # lib/services/google_web_signin_button_web.dart.
+  google_sign_in_platform_interface: ^2.5.0
+  google_sign_in_web: ^0.12.4+4
   firebase_core: ^4.1.1
   firebase_messaging: ^16.0.3
   flutter_secure_storage: ^9.2.2
