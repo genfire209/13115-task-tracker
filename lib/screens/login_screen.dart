@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/auth_service.dart';
+import '../services/google_web_signin_button.dart';
 import '../theme/app_theme.dart';
 import '../widgets/background_gear.dart';
 import '../widgets/gear_spinner.dart';
@@ -33,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthService>();
+    final auth = context.watch<AuthService>();
 
     return Scaffold(
       body: DecoratedBox(
@@ -105,54 +107,75 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 56),
-                        if (_loading)
-                          const GearSpinner(color: AppTheme.primary, size: 36),
-                        if (!_loading)
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                        // Web can't get a usable ID token from an imperative
+                        // signIn() call in a browser, so it renders Google's
+                        // own button instead — see google_web_signin_button.
+                        // AuthService picks up the result via a listener
+                        // rather than this button's onTap.
+                        if (kIsWeb) ...[
+                          buildGoogleWebSignInButton(),
+                          if (auth.isCompletingWebSignIn) ...[
+                            const SizedBox(height: 20),
+                            const GearSpinner(color: AppTheme.primary, size: 28),
+                          ],
+                          if (auth.webSignInError != null) ...[
+                            const SizedBox(height: 20),
+                            Text(
+                              auth.webSignInError!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: AppTheme.statusDeclined),
                             ),
-                            child: Material(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              child: InkWell(
+                          ],
+                        ] else ...[
+                          if (_loading)
+                            const GearSpinner(color: AppTheme.primary, size: 36),
+                          if (!_loading)
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                onTap: () => _handle(auth.signInWithGoogle),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 14),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.g_mobiledata,
-                                        size: 28,
-                                        color: Colors.black87,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Continue with Google',
-                                        style: TextStyle(
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => _handle(auth.signInWithGoogle),
+                                  child: const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 14),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.g_mobiledata,
+                                          size: 28,
                                           color: Colors.black87,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
                                         ),
-                                      ),
-                                    ],
+                                        SizedBox(width: 4),
+                                        Text(
+                                          'Continue with Google',
+                                          style: TextStyle(
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        if (_error != null) ...[
-                          const SizedBox(height: 20),
-                          Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppTheme.statusDeclined,
+                          if (_error != null) ...[
+                            const SizedBox(height: 20),
+                            Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: AppTheme.statusDeclined,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ],
                     ),

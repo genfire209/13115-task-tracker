@@ -29,6 +29,16 @@ class AuthService extends ChangeNotifier {
   bool _isRestoring = true;
   bool get isRestoring => _isRestoring;
 
+  // Web only: set while a rendered Google button click is being turned into
+  // a backend session, and surfaces any failure from that — see
+  // _listenForWebSignIn below for why this doesn't go through
+  // signInWithGoogle()'s normal call/await/catch shape.
+  bool _isCompletingWebSignIn = false;
+  bool get isCompletingWebSignIn => _isCompletingWebSignIn;
+  String? _webSignInError;
+  String? get webSignInError => _webSignInError;
+  void clearWebSignInError() => _webSignInError = null;
+
   /// Called once at app startup. Google Sign-In keeps its own persisted
   /// session (survives app updates and normal closes), so this normally lets
   /// a returning member skip straight past the login screen.
@@ -55,13 +65,7 @@ class AuthService extends ChangeNotifier {
           );
           await _googleSignIn.signOut();
         } else {
-          final auth = await account.authentication;
-          _currentUser = await _api.login(
-            provider: 'google',
-            idToken: auth.idToken ?? '',
-            name: account.displayName ?? account.email,
-          );
-          unawaited(_registerPushToken());
+          await _completeSignIn(account);
         }
       }
     } catch (e) {
@@ -69,7 +73,34 @@ class AuthService extends ChangeNotifier {
     } finally {
       _isRestoring = false;
       notifyListeners();
+      // Deliberately started only after the restore attempt above has
+      // resolved, so the account-changed event that signInSilently() itself
+      // triggers isn't double-handled here as well. From this point on,
+      // this only fires for a genuinely new event — i.e. someone using the
+      // rendered Google button on the web login screen.
+      if (kIsWeb) _listenForWebSignIn();
     }
+  }
+
+  // Web can't reliably get an ID token from an imperative signIn() call (see
+  // google_web_signin_button_web.dart) — the real credential only comes
+  // through when the rendered Google button is used, which surfaces here
+  // instead of as a return value.
+  void _listenForWebSignIn() {
+    _googleSignIn.onCurrentUserChanged.listen((account) async {
+      if (account == null || account.email == _currentUser?.id) return;
+      _isCompletingWebSignIn = true;
+      _webSignInError = null;
+      notifyListeners();
+      try {
+        await _completeSignIn(account);
+      } catch (e) {
+        _webSignInError = 'Sign-in failed: $e';
+      } finally {
+        _isCompletingWebSignIn = false;
+        notifyListeners();
+      }
+    });
   }
 
   Future<void> signInWithGoogle() async {
@@ -82,10 +113,21 @@ class AuthService extends ChangeNotifier {
     // backend with a banned/removed error, with no visible way to pick a
     // different account. Signing out first clears that cached account so the
     // picker always appears.
+    //
+    // Native only — the web login screen renders Google's own button
+    // instead of calling this, since signIn() can't get a usable ID token
+    // in a browser.
     await _googleSignIn.signOut();
     final account = await _googleSignIn.signIn();
     if (account == null) return; // user cancelled
+    await _completeSignIn(account);
+  }
 
+  /// Shared by every sign-in path (native button, web rendered button, and
+  /// a matched silent restore): clears the previous account's push token if
+  /// this device is switching users, logs into the backend, and remembers
+  /// which account this device is now expected to be signed in as.
+  Future<void> _completeSignIn(GoogleSignInAccount account) async {
     // On a shared device (e.g. siblings taking turns), the account signing
     // in now is about to start using this device's push token — clear it
     // from whoever used it last, or both accounts would receive each
