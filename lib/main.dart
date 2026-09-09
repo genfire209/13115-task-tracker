@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'state/task_repository.dart';
+import 'screens/junior_dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/pending_approval_screen.dart';
@@ -66,6 +67,9 @@ class _RootRouterState extends State<_RootRouter> {
     final user = auth.currentUser!;
     if (user.subteams.isEmpty) return const OnboardingScreen();
     if (!user.approved) return const PendingApprovalScreen();
+    // Admins/captains always get the full portal, even if isJunior was ever
+    // mistakenly set on their account.
+    if (user.isJunior && !user.hasCaptainAccess) return const JuniorDashboardScreen();
     return const TaskBoardScreen();
   }
 }

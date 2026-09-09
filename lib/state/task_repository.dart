@@ -17,7 +17,6 @@ class TaskRepository extends ChangeNotifier {
   List<ExtensionRequest> _pendingExtensionRequests = [];
   List<AppUser> _users = [];
   List<AppUser> _pendingApprovals = [];
-  LoginLog? _loginLog;
 
   bool isLoading = false;
   String? loadError;
@@ -27,7 +26,6 @@ class TaskRepository extends ChangeNotifier {
   List<ExtensionRequest> get pendingExtensionRequests => List.unmodifiable(_pendingExtensionRequests);
   List<AppUser> get users => List.unmodifiable(_users);
   List<AppUser> get pendingApprovals => List.unmodifiable(_pendingApprovals);
-  LoginLog? get loginLog => _loginLog;
 
   /// Display name for a user id (falls back to the id/email if not loaded yet).
   String nameFor(String userId) {
@@ -80,6 +78,12 @@ class TaskRepository extends ChangeNotifier {
     await loadAll();
   }
 
+  /// A captain/admin moving someone between the main and junior team.
+  Future<void> setUserJunior(String userId, bool isJunior) async {
+    await _api.setUserJunior(userId, isJunior);
+    await loadAll();
+  }
+
   Future<void> loadPendingApprovals() async {
     _pendingApprovals = await _api.fetchPendingApprovals();
     notifyListeners();
@@ -89,11 +93,6 @@ class TaskRepository extends ChangeNotifier {
     await _api.approveUser(userId);
     await loadPendingApprovals();
     await loadAll();
-  }
-
-  Future<void> loadLoginLog(String requesterId) async {
-    _loginLog = await _api.fetchLoginLog(requesterId: requesterId);
-    notifyListeners();
   }
 
   Future<void> loadEventsForTask(String taskId) async {

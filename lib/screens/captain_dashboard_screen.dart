@@ -10,7 +10,6 @@ import '../widgets/gradient_fab.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/subteam_multi_select.dart';
 import 'create_task_screen.dart';
-import 'login_activity_screen.dart';
 
 class CaptainDashboardScreen extends StatefulWidget {
   const CaptainDashboardScreen({super.key});
@@ -267,12 +266,37 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                u.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      u.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ),
+                                  if (u.isJunior) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.categoryStrategy.withValues(alpha: 0.18),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'JUNIOR',
+                                        style: TextStyle(
+                                          color: AppTheme.categoryStrategy,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -313,8 +337,10 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
                         FilterChip(
                           label: Text(
@@ -327,6 +353,11 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                                 ? UserRole.member
                                 : UserRole.captain,
                           ),
+                        ),
+                        FilterChip(
+                          label: Text(u.isJunior ? 'Junior Team' : 'Main Team'),
+                          selected: u.isJunior,
+                          onSelected: (_) => repo.setUserJunior(u.id, !u.isJunior),
                         ),
                         if (!isSelf) ...[
                           const SizedBox(width: 8),
@@ -359,21 +390,6 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
               ),
             );
           }),
-          const SizedBox(height: 24),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Login activity'),
-              subtitle: const Text(
-                'See every account and when they last signed in',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginActivityScreen()),
-              ),
-            ),
-          ),
         ],
         ),
       ),

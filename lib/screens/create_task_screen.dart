@@ -85,7 +85,10 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                     value: null,
                     label: 'Leave open (anyone can claim)',
                   ),
-                  ...repo.users.map((u) => DropdownMenuEntry<String?>(value: u.id, label: u.name)),
+                  ...repo.users.map((u) => DropdownMenuEntry<String?>(
+                        value: u.id,
+                        label: u.isJunior ? '${u.name} (Junior)' : u.name,
+                      )),
                 ],
                 onSelected: (v) => setState(() => _assigneeId = v),
               ),

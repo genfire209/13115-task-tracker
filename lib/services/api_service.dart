@@ -157,12 +157,16 @@ class ApiService {
     }
   }
 
-  Future<LoginLog> fetchLoginLog({required String requesterId}) async {
-    final res = await http.get(Uri.parse('$baseUrl/users/login-log?requesterId=$requesterId'));
+  /// Captain/admin moving someone between the main and junior team.
+  Future<void> setUserJunior(String userId, bool isJunior) async {
+    final res = await http.patch(
+      Uri.parse('$baseUrl/users/$userId'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'isJunior': isJunior}),
+    );
     if (res.statusCode >= 400) {
-      throw Exception('Failed to load login log: ${res.body}');
+      throw Exception('Failed to update team: ${res.body}');
     }
-    return LoginLog.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
   Future<Task> createTask({

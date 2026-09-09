@@ -124,6 +124,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         final user = auth.currentUser!;
         final isAssignee = task.assignedTo == user.id; // assignedTo stores the user's id (email)
         final isCaptain = user.hasCaptainAccess;
+        // Junior-team members only work tasks a captain hands them directly
+        // — no self-service claiming or volunteering for open/declined work.
+        final canClaim = !user.isJunior;
         final events = repo.eventsFor(taskId);
         final pendingExtensions = repo.pendingExtensionRequests
             .where((r) => r.taskId == taskId)
@@ -152,7 +155,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               const SizedBox(height: 24),
 
               // --- Actions available to the current user ---
-              if (task.status == TaskStatus.open)
+              if (task.status == TaskStatus.open && canClaim)
                 FilledButton(
                   onPressed: () => repo.claimTask(taskId, user.id),
                   child: const Text('Claim this task'),
@@ -232,6 +235,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   repo: repo,
                   events: events,
                   isCaptain: isCaptain,
+                  canClaim: canClaim,
                   currentUserId: user.id,
                   onApproveVolunteer: (assigneeId) =>
                       repo.approveVolunteer(taskId, user.id, assigneeId),
@@ -309,6 +313,7 @@ class _DeclinedTaskSection extends StatelessWidget {
   final TaskRepository repo;
   final List<TaskEvent> events;
   final bool isCaptain;
+  final bool canClaim;
   final String currentUserId;
   final ValueChanged<String> onApproveVolunteer;
   final VoidCallback onVolunteer;
@@ -317,6 +322,7 @@ class _DeclinedTaskSection extends StatelessWidget {
     required this.repo,
     required this.events,
     required this.isCaptain,
+    required this.canClaim,
     required this.currentUserId,
     required this.onApproveVolunteer,
     required this.onVolunteer,
@@ -332,7 +338,8 @@ class _DeclinedTaskSection extends StatelessWidget {
       volunteersByActor[e.actorId] = e;
     }
     final alreadyVolunteered = volunteersByActor.containsKey(currentUserId);
-    final canVolunteer = !isCaptain && currentUserId != declinedBy?.actorId && !alreadyVolunteered;
+    final canVolunteer =
+        !isCaptain && canClaim && currentUserId != declinedBy?.actorId && !alreadyVolunteered;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -437,7 +444,10 @@ class _CaptainReassignSection extends StatelessWidget {
               inputDecorationTheme: AppTheme.dropdownInputDecorationTheme,
               menuStyle: AppTheme.dropdownMenuStyle,
               dropdownMenuEntries: repo.users
-                  .map((u) => DropdownMenuEntry(value: u.id, label: u.name))
+                  .map((u) => DropdownMenuEntry(
+                        value: u.id,
+                        label: u.isJunior ? '${u.name} (Junior)' : u.name,
+                      ))
                   .toList(),
               onSelected: onSelectionChanged,
             ),
