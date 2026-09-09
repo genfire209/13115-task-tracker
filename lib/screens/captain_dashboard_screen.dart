@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gradient_fab.dart';
+import '../widgets/responsive_center.dart';
 import '../widgets/subteam_multi_select.dart';
 import 'create_task_screen.dart';
 import 'login_activity_screen.dart';
@@ -143,7 +144,8 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
         icon: Icons.add,
         label: 'Assign Task',
       ),
-      body: ListView(
+      body: ResponsiveCenter(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _SectionHeader(
@@ -373,6 +375,7 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }
