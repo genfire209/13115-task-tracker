@@ -25,7 +25,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<TaskRepository>().loadEventsForTask(taskId);
+      final repo = context.read<TaskRepository>();
+      repo.loadEventsForTask(taskId);
+      // Opened straight from a notification tap before the board ever
+      // loaded the task list.
+      if (repo.tasks.isEmpty) repo.loadAll();
     });
   }
 
@@ -120,7 +124,23 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Widget build(BuildContext context) {
     return Consumer2<TaskRepository, AuthService>(
       builder: (context, repo, auth, _) {
-        final task = repo.tasks.firstWhere((t) => t.id == taskId);
+        final matches = repo.tasks.where((t) => t.id == taskId);
+        if (matches.isEmpty) {
+          // Deep-linked from a notification and the task list isn't in yet
+          // (or the task was since deleted).
+          return Scaffold(
+            appBar: AppBar(),
+            body: Center(
+              child: repo.isLoading
+                  ? const CircularProgressIndicator(color: AppTheme.primary)
+                  : const Text(
+                      "This task couldn't be found.",
+                      style: TextStyle(color: AppTheme.onSurfaceMuted),
+                    ),
+            ),
+          );
+        }
+        final task = matches.first;
         final user = auth.currentUser!;
         final isAssignee = task.assignedTo == user.id; // assignedTo stores the user's id (email)
         final isCaptain = user.hasCaptainAccess;

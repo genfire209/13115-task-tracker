@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'notification_routing.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'state/task_repository.dart';
@@ -34,6 +37,7 @@ class TaskTrackerApp extends StatelessWidget {
         title: '13115 Robotics',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.dark,
+        navigatorKey: NotificationService.navigatorKey,
         home: const _RootRouter(),
       ),
     );
@@ -48,10 +52,33 @@ class _RootRouter extends StatefulWidget {
 }
 
 class _RootRouterState extends State<_RootRouter> {
+  StreamSubscription<Map<String, dynamic>>? _tapSub;
+  bool _pendingHandled = false;
+
   @override
   void initState() {
     super.initState();
     context.read<AuthService>().tryRestoreSession();
+    // Taps that happen while the app is already running.
+    _tapSub = NotificationService.onNotificationTap.listen((data) {
+      if (mounted && _readyForDeepLink()) handleNotificationTap(data);
+    });
+  }
+
+  @override
+  void dispose() {
+    _tapSub?.cancel();
+    super.dispose();
+  }
+
+  /// Only deep-link once the user is past login/onboarding/approval — a
+  /// TaskDetailScreen pushed before then would have no data and nowhere sane
+  /// to pop back to.
+  bool _readyForDeepLink() {
+    final auth = context.read<AuthService>();
+    if (auth.isRestoring || !auth.isLoggedIn) return false;
+    final user = auth.currentUser!;
+    return user.subteams.isNotEmpty && user.approved;
   }
 
   @override
@@ -67,6 +94,20 @@ class _RootRouterState extends State<_RootRouter> {
     final user = auth.currentUser!;
     if (user.subteams.isEmpty) return const OnboardingScreen();
     if (!user.approved) return const PendingApprovalScreen();
+
+    // Now that the user is fully in, follow any notification tap that
+    // cold-launched the app. Runs after this frame so the board (which
+    // kicks off the task load) is mounted first.
+    if (!_pendingHandled) {
+      _pendingHandled = true;
+      final pending = NotificationService.takePending();
+      if (pending != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          handleNotificationTap(pending);
+        });
+      }
+    }
+
     // Admins/captains always get the full portal, even if isJunior was ever
     // mistakenly set on their account.
     if (user.isJunior && !user.hasCaptainAccess) return const JuniorDashboardScreen();
