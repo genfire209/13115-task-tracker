@@ -6,6 +6,16 @@ import '../models/task_event.dart';
 import '../models/extension_request.dart';
 import '../models/user.dart';
 
+/// Thrown when the backend says a user record is gone or no longer has
+/// access (404/403) — as opposed to a transient/server error, which stays a
+/// plain [Exception].
+class ApiUserGoneException implements Exception {
+  final String message;
+  ApiUserGoneException(this.message);
+  @override
+  String toString() => message;
+}
+
 /// Thin wrapper around the deployed Azure App Service backend.
 class ApiService {
   static const String baseUrl = 'https://app-13115-tasktracker.azurewebsites.net/api';
@@ -52,6 +62,9 @@ class ApiService {
 
   Future<AppUser> fetchUserById(String userId) async {
     final res = await http.get(Uri.parse('$baseUrl/users/$userId'));
+    if (res.statusCode == 404 || res.statusCode == 403) {
+      throw ApiUserGoneException('Account no longer exists or has been removed');
+    }
     if (res.statusCode >= 400) {
       throw Exception('Failed to load user: ${res.body}');
     }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,6 +10,10 @@ import 'api_service.dart';
 import 'notification_service.dart';
 
 const _kExpectedAccountKey = 'expected_google_account_email';
+// A JSON snapshot of the last signed-in user. Used only on web, where
+// Google's browser sign-in (GIS One Tap) doesn't reliably restore a session
+// across a page reload — see tryRestoreSession.
+const _kCachedUserKey = 'cached_user_json_v1';
 
 /// Handles Google sign-in and exposes the current logged-in user.
 class AuthService extends ChangeNotifier {
@@ -39,6 +44,24 @@ class AuthService extends ChangeNotifier {
   String? get webSignInError => _webSignInError;
   void clearWebSignInError() => _webSignInError = null;
 
+  /// Sets the current user and mirrors it into local storage (web session
+  /// fallback). Pass null to clear both.
+  Future<void> _setCurrentUser(AppUser? user) async {
+    _currentUser = user;
+    try {
+      if (user == null) {
+        await _secureStorage.delete(key: _kCachedUserKey);
+      } else {
+        await _secureStorage.write(
+          key: _kCachedUserKey,
+          value: jsonEncode(user.toJson()),
+        );
+      }
+    } catch (e) {
+      debugPrint('Could not persist cached user: $e');
+    }
+  }
+
   /// Called once at app startup. Google Sign-In keeps its own persisted
   /// session (survives app updates and normal closes), so this normally lets
   /// a returning member skip straight past the login screen.
@@ -53,23 +76,35 @@ class AuthService extends ChangeNotifier {
   /// account doesn't match, we sign out of it and fall back to the login
   /// screen, so at least the mismatch is visible instead of silently
   /// operating as the wrong person.
+  ///
+  /// On web, Google's One Tap silent restore frequently returns nothing
+  /// after a page reload (cooldown, dismissed prompt, browser cookie
+  /// policy), which would log the user out on every refresh. So there we
+  /// also fall back to a locally cached copy of the last signed-in user and
+  /// revalidate it against the backend in the background.
   Future<void> tryRestoreSession() async {
     try {
-      final account = await _googleSignIn.signInSilently();
-      if (account != null) {
-        final expectedEmail = await _secureStorage.read(key: _kExpectedAccountKey);
-        if (expectedEmail != null && expectedEmail != account.email) {
-          debugPrint(
-            '[auth] silent restore returned ${account.email}, expected $expectedEmail — '
-            'signing out and requiring an explicit sign-in instead.',
-          );
-          await _googleSignIn.signOut();
-        } else {
-          await _completeSignIn(account);
+      try {
+        final account = await _googleSignIn.signInSilently();
+        if (account != null) {
+          final expectedEmail = await _secureStorage.read(key: _kExpectedAccountKey);
+          if (expectedEmail != null && expectedEmail != account.email) {
+            debugPrint(
+              '[auth] silent restore returned ${account.email}, expected $expectedEmail — '
+              'signing out and requiring an explicit sign-in instead.',
+            );
+            await _googleSignIn.signOut();
+          } else {
+            await _completeSignIn(account);
+          }
         }
+      } catch (e) {
+        debugPrint('Silent sign-in failed: $e');
       }
-    } catch (e) {
-      debugPrint('Silent sign-in failed: $e');
+
+      if (kIsWeb && _currentUser == null) {
+        await _restoreCachedUserWeb();
+      }
     } finally {
       _isRestoring = false;
       notifyListeners();
@@ -79,6 +114,37 @@ class AuthService extends ChangeNotifier {
       // this only fires for a genuinely new event — i.e. someone using the
       // rendered Google button on the web login screen.
       if (kIsWeb) _listenForWebSignIn();
+    }
+  }
+
+  Future<void> _restoreCachedUserWeb() async {
+    try {
+      final raw = await _secureStorage.read(key: _kCachedUserKey);
+      if (raw == null) return;
+      _currentUser = AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      // Pick up any role/subteam/approval changes, and drop the session if
+      // the account has since been removed. A transient error leaves the
+      // cached session untouched.
+      unawaited(_revalidateCachedUser());
+    } catch (e) {
+      debugPrint('Cached web session restore failed: $e');
+      await _secureStorage.delete(key: _kCachedUserKey);
+    }
+  }
+
+  Future<void> _revalidateCachedUser() async {
+    final id = _currentUser?.id;
+    if (id == null) return;
+    try {
+      final fresh = await _api.fetchUserById(id);
+      await _setCurrentUser(fresh);
+      notifyListeners();
+    } on ApiUserGoneException {
+      await signOut();
+    } catch (e) {
+      // Network/server hiccup — keep the cached session rather than kicking
+      // the user out over a blip.
+      debugPrint('Cached web session revalidation (kept): $e');
     }
   }
 
@@ -138,12 +204,13 @@ class AuthService extends ChangeNotifier {
     }
 
     final auth = await account.authentication;
-    _currentUser = await _api.login(
+    final user = await _api.login(
       provider: 'google',
       idToken: auth.idToken ?? '',
       name: account.displayName ?? account.email,
     );
     await _secureStorage.write(key: _kExpectedAccountKey, value: account.email);
+    await _setCurrentUser(user);
     notifyListeners();
     unawaited(_registerPushToken());
   }
@@ -175,7 +242,8 @@ class AuthService extends ChangeNotifier {
   Future<void> completeProfile({required String name, required List<Subteam> subteams}) async {
     final user = _currentUser;
     if (user == null) return;
-    _currentUser = await _api.completeProfile(userId: user.id, name: name, subteams: subteams);
+    final updated = await _api.completeProfile(userId: user.id, name: name, subteams: subteams);
+    await _setCurrentUser(updated);
     notifyListeners();
   }
 
@@ -184,7 +252,7 @@ class AuthService extends ChangeNotifier {
     final user = _currentUser;
     if (user == null) return;
     await _api.updateSubteams(user.id, subteams);
-    _currentUser = user.copyWith(subteams: subteams);
+    await _setCurrentUser(user.copyWith(subteams: subteams));
     notifyListeners();
   }
 
@@ -193,7 +261,7 @@ class AuthService extends ChangeNotifier {
   Future<void> refreshCurrentUser() async {
     final user = _currentUser;
     if (user == null) return;
-    _currentUser = await _api.fetchUserById(user.id);
+    await _setCurrentUser(await _api.fetchUserById(user.id));
     notifyListeners();
   }
 
@@ -207,7 +275,7 @@ class AuthService extends ChangeNotifier {
       unawaited(_clearTokenBestEffort(outgoingUser.id));
     }
     await _googleSignIn.signOut();
-    _currentUser = null;
+    await _setCurrentUser(null);
     notifyListeners();
   }
 }
