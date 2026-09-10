@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 /// Thin wrapper around Firebase Cloud Messaging: init, permission request,
-/// and device token retrieval. The backend does the actual sending.
+/// device token retrieval, and surfacing notification taps so the app can
+/// deep-link to the right screen.
 ///
 /// Push isn't wired up for the web build (no service worker/VAPID key
 /// configured) — every method here is a no-op on web rather than crashing or
@@ -11,6 +15,25 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 /// else about the app works the same in a browser; web users just don't get
 /// push notifications yet.
 class NotificationService {
+  /// Attached to the app's MaterialApp so notification handling can navigate
+  /// from outside the widget tree.
+  static final navigatorKey = GlobalKey<NavigatorState>();
+
+  // Notification-tap payloads (RemoteMessage.data). A broadcast stream for
+  // taps while the app is running, plus a stashed one for a tap that
+  // launched the app from terminated — consumed once the app is ready.
+  static final _taps = StreamController<Map<String, dynamic>>.broadcast();
+  static Stream<Map<String, dynamic>> get onNotificationTap => _taps.stream;
+  static Map<String, dynamic>? _pending;
+
+  /// The payload of a notification tap that started the app, if any. Cleared
+  /// on read so it's only handled once.
+  static Map<String, dynamic>? takePending() {
+    final p = _pending;
+    _pending = null;
+    return p;
+  }
+
   static Future<void> initializeFirebase() async {
     if (kIsWeb) return;
     await Firebase.initializeApp();
@@ -24,6 +47,14 @@ class NotificationService {
         sound: true,
       );
     }
+    // Fires when a notification is tapped while the app is backgrounded (or
+    // a foreground banner is tapped).
+    FirebaseMessaging.onMessageOpenedApp.listen((m) {
+      _taps.add(m.data);
+    });
+    // A tap that cold-launched the app from terminated.
+    final initial = await FirebaseMessaging.instance.getInitialMessage();
+    if (initial != null) _pending = initial.data;
   }
 
   /// Requests notification permission (iOS requires this explicitly) and
