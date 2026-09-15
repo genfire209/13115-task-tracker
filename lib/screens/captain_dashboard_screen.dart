@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../config.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
@@ -9,6 +12,7 @@ import '../theme/app_theme.dart';
 import '../widgets/gradient_fab.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/subteam_multi_select.dart';
+import 'change_captain_screen.dart';
 import 'create_task_screen.dart';
 
 class CaptainDashboardScreen extends StatefulWidget {
@@ -19,12 +23,76 @@ class CaptainDashboardScreen extends StatefulWidget {
 }
 
 class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
+  int _titleTapCount = 0;
+  Timer? _titleTapResetTimer;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TaskRepository>().loadPendingApprovals();
     });
+  }
+
+  @override
+  void dispose() {
+    _titleTapResetTimer?.cancel();
+    super.dispose();
+  }
+
+  // Deliberately undiscoverable UI: 5 taps on the title within 2 seconds,
+  // and only for kCaptainChangeOwnerId — see lib/config.dart. Nothing shown
+  // to anyone else, and the PATCH is re-checked server-side regardless.
+  void _onTitleTap() {
+    final currentUserId = context.read<AuthService>().currentUser?.id;
+    if (currentUserId != kCaptainChangeOwnerId) return;
+
+    _titleTapResetTimer?.cancel();
+    _titleTapCount++;
+    if (_titleTapCount >= 5) {
+      _titleTapCount = 0;
+      _promptForPinAndOpen(currentUserId!);
+    } else {
+      _titleTapResetTimer = Timer(const Duration(seconds: 2), () {
+        _titleTapCount = 0;
+      });
+    }
+  }
+
+  Future<void> _promptForPinAndOpen(String requesterId) async {
+    final controller = TextEditingController();
+    final pin = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter PIN'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'PIN'),
+          onSubmitted: (v) => Navigator.pop(ctx, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (pin != null && pin.isNotEmpty && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChangeCaptainScreen(requesterId: requesterId, pin: pin),
+        ),
+      );
+    }
   }
 
   Future<void> _confirmRemove(
@@ -134,7 +202,13 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
     final repo = context.watch<TaskRepository>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Captain Portal')),
+      appBar: AppBar(
+        title: GestureDetector(
+          onTap: _onTitleTap,
+          behavior: HitTestBehavior.opaque,
+          child: const Text('Captain Portal'),
+        ),
+      ),
       floatingActionButton: GradientFab(
         onPressed: () => Navigator.push(
           context,
@@ -342,16 +416,12 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        FilterChip(
+                        // Role is shown but no longer editable here — who's
+                        // captain only changes through the hidden PIN flow
+                        // (see _onTitleTap above).
+                        Chip(
                           label: Text(
                             u.role == UserRole.captain ? 'Captain' : 'Member',
-                          ),
-                          selected: u.role == UserRole.captain,
-                          onSelected: (_) => repo.setUserRole(
-                            u.id,
-                            u.role == UserRole.captain
-                                ? UserRole.member
-                                : UserRole.captain,
                           ),
                         ),
                         FilterChip(

@@ -100,12 +100,26 @@ class ApiService {
     }
   }
 
-  Future<void> setUserRole({required String userId, required UserRole role}) async {
+  /// requesterId/pin are required server-side — only the designated owner
+  /// account, with the correct PIN, can change who's captain.
+  Future<void> setUserRole({
+    required String userId,
+    required UserRole role,
+    required String requesterId,
+    required String pin,
+  }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'role': role == UserRole.captain ? 'captain' : 'member'}),
+      body: jsonEncode({
+        'role': role == UserRole.captain ? 'captain' : 'member',
+        'requesterId': requesterId,
+        'pin': pin,
+      }),
     );
+    if (res.statusCode == 403) {
+      throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Not authorized');
+    }
     if (res.statusCode >= 400) {
       throw Exception('Failed to update role: ${res.body}');
     }

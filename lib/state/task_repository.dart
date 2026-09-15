@@ -56,8 +56,16 @@ class TaskRepository extends ChangeNotifier {
     }
   }
 
-  Future<void> setUserRole(String userId, UserRole role) async {
-    await _api.setUserRole(userId: userId, role: role);
+  /// Only the designated owner account + PIN can actually succeed here —
+  /// see ChangeCaptainScreen. Throws (with the server's error message) on a
+  /// wrong PIN or wrong requester.
+  Future<void> setUserRole(
+    String userId,
+    UserRole role, {
+    required String requesterId,
+    required String pin,
+  }) async {
+    await _api.setUserRole(userId: userId, role: role, requesterId: requesterId, pin: pin);
     await loadAll();
   }
 
