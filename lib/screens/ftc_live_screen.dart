@@ -205,7 +205,7 @@ class _FtcLiveScreenState extends State<FtcLiveScreen> {
               if (upNext == null || upNext.isEmpty)
                 const Text('No unplayed matches.', style: TextStyle(color: AppTheme.onSurfaceMuted))
               else
-                _MatchCard(match: upNext.first),
+                _MatchCard(match: upNext.first, timezone: event.timezone),
               const SizedBox(height: 20),
               const Text('Recent Results', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               const SizedBox(height: 8),
@@ -214,7 +214,7 @@ class _FtcLiveScreenState extends State<FtcLiveScreen> {
               else
                 ...results.take(10).map((m) => Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: _MatchCard(match: m),
+                      child: _MatchCard(match: m, timezone: event.timezone),
                     )),
             ],
             if (_watched.isNotEmpty) ...[
@@ -242,7 +242,8 @@ class _FtcLiveScreenState extends State<FtcLiveScreen> {
 
 class _MatchCard extends StatelessWidget {
   final FtcMatch match;
-  const _MatchCard({required this.match});
+  final String? timezone;
+  const _MatchCard({required this.match, this.timezone});
 
   @override
   Widget build(BuildContext context) {
@@ -257,9 +258,13 @@ class _MatchCard extends StatelessWidget {
               children: [
                 Text(match.description, style: const TextStyle(fontWeight: FontWeight.w700)),
                 const Spacer(),
+                // scheduledStartTime is the venue's own wall-clock time, not
+                // this device's — shown as-is with the venue's timezone
+                // name so it's never mistaken for local time.
                 if (match.scheduledStartTime != null)
                   Text(
-                    DateFormat.jm().format(match.scheduledStartTime!.toLocal()),
+                    '${DateFormat.jm().format(match.scheduledStartTime!)}'
+                    '${timezone != null ? ' ($timezone)' : ''}',
                     style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 12),
                   ),
               ],
