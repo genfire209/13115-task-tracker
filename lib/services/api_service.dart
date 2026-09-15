@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/task.dart';
 import '../models/task_event.dart';
 import '../models/extension_request.dart';
+import '../models/ftc_live.dart';
 import '../models/user.dart';
 
 /// Thrown when the backend says a user record is gone or no longer has
@@ -299,6 +300,52 @@ class ApiService {
     );
     if (res.statusCode >= 400) {
       throw Exception('Failed to decide extension: ${res.body}');
+    }
+  }
+
+  // --- Hidden "FTC Live" feature ---
+
+  Future<FtcEventLive> fetchFtcEventLive({required int season, required String eventCode}) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/ftc-live/event?season=$season&code=$eventCode'),
+    );
+    if (res.statusCode == 404) {
+      throw Exception('Event not found — check the season and event code');
+    }
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load event: ${res.body}');
+    }
+    return FtcEventLive.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  Future<List<WatchedFtcEvent>> fetchWatchedFtcEvents() async {
+    final res = await http.get(Uri.parse('$baseUrl/ftc-live/watched'));
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load watched events: ${res.body}');
+    }
+    final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
+    return data.map((j) => WatchedFtcEvent.fromJson(j as Map<String, dynamic>)).toList();
+  }
+
+  Future<void> addWatchedFtcEvent({
+    required int season,
+    required String eventCode,
+    required String requesterId,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$baseUrl/ftc-live/watched'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'season': season, 'eventCode': eventCode, 'requesterId': requesterId}),
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to track event: ${res.body}');
+    }
+  }
+
+  Future<void> removeWatchedFtcEvent(String id) async {
+    final res = await http.delete(Uri.parse('$baseUrl/ftc-live/watched/$id'));
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to stop tracking event: ${res.body}');
     }
   }
 }
