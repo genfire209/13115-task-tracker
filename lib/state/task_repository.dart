@@ -108,6 +108,12 @@ class TaskRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Permanently removes a task. Admin-only, enforced server-side.
+  Future<void> deleteTask(String taskId, String requesterId) async {
+    await _api.deleteTask(taskId: taskId, requesterId: requesterId);
+    await loadAll();
+  }
+
   Future<Task> createTask({
     required String title,
     required String description,
