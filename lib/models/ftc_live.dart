@@ -1,5 +1,26 @@
 // Models for the hidden "FTC Live" feature — live match tracking pulled
-// from FTCScout's public API via our own backend (see api_service.dart).
+// from FIRST's official FTC Events API via our own backend (see
+// api_service.dart).
+
+/// The backend sends match times as the raw venue-local wall-clock string
+/// FIRST's API gives it (no UTC offset at all — "all times are listed in
+/// the local time to the event venue" per their docs). DateTime.parse would
+/// silently reinterpret an offset-less string as *this device's* local
+/// time, which is wrong for anyone not literally in the venue's timezone.
+/// This just reads the y/m/d/h/m fields as-is with no conversion, so
+/// formatting it always shows the venue's actual wall-clock time.
+DateTime? parseVenueLocalTime(String? raw) {
+  if (raw == null) return null;
+  final m = RegExp(r'^(\d+)-(\d+)-(\d+)T(\d+):(\d+)').firstMatch(raw);
+  if (m == null) return null;
+  return DateTime(
+    int.parse(m.group(1)!),
+    int.parse(m.group(2)!),
+    int.parse(m.group(3)!),
+    int.parse(m.group(4)!),
+    int.parse(m.group(5)!),
+  );
+}
 
 class FtcMatchTeam {
   final String alliance; // 'Red' or 'Blue'
@@ -14,19 +35,19 @@ class FtcMatchTeam {
 }
 
 class FtcMatch {
-  final int id;
+  final String matchKey;
   final int matchNum;
   final String tournamentLevel;
   final String description;
   final bool hasBeenPlayed;
-  final DateTime? scheduledStartTime;
+  final DateTime? scheduledStartTime; // venue-local wall clock, see parseVenueLocalTime
   final DateTime? postResultTime;
   final List<FtcMatchTeam> teams;
   final int? redScore;
   final int? blueScore;
 
   FtcMatch({
-    required this.id,
+    required this.matchKey,
     required this.matchNum,
     required this.tournamentLevel,
     required this.description,
@@ -48,17 +69,13 @@ class FtcMatch {
   }
 
   factory FtcMatch.fromJson(Map<String, dynamic> json) => FtcMatch(
-        id: json['id'] as int,
+        matchKey: json['matchKey'] as String,
         matchNum: json['matchNum'] as int,
         tournamentLevel: json['tournamentLevel'] as String,
         description: json['description'] as String,
         hasBeenPlayed: json['hasBeenPlayed'] as bool,
-        scheduledStartTime: json['scheduledStartTime'] != null
-            ? DateTime.parse(json['scheduledStartTime'] as String)
-            : null,
-        postResultTime: json['postResultTime'] != null
-            ? DateTime.parse(json['postResultTime'] as String)
-            : null,
+        scheduledStartTime: parseVenueLocalTime(json['scheduledStartTime'] as String?),
+        postResultTime: parseVenueLocalTime(json['postResultTime'] as String?),
         teams: (json['teams'] as List<dynamic>)
             .map((t) => FtcMatchTeam.fromJson(t as Map<String, dynamic>))
             .toList(),
@@ -69,12 +86,14 @@ class FtcMatch {
 
 class FtcEventLive {
   final String name;
+  final String? timezone;
   final List<FtcMatch> matches;
 
-  FtcEventLive({required this.name, required this.matches});
+  FtcEventLive({required this.name, this.timezone, required this.matches});
 
   factory FtcEventLive.fromJson(Map<String, dynamic> json) => FtcEventLive(
         name: json['name'] as String,
+        timezone: json['timezone'] as String?,
         matches: (json['matches'] as List<dynamic>)
             .map((m) => FtcMatch.fromJson(m as Map<String, dynamic>))
             .toList(),
