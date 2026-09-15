@@ -267,6 +267,20 @@ class ApiService {
     return ExtensionRequest.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
+  /// Permanently deletes a task and its history. Admin-only, enforced
+  /// server-side.
+  Future<void> deleteTask({required String taskId, required String requesterId}) async {
+    final res = await http.delete(
+      Uri.parse('$baseUrl/tasks/$taskId?requesterId=$requesterId'),
+    );
+    if (res.statusCode == 403) {
+      throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Not authorized');
+    }
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to delete task: ${res.body}');
+    }
+  }
+
   Future<List<ExtensionRequest>> fetchPendingExtensionRequests() async {
     final res = await http.get(Uri.parse('$baseUrl/extension-requests?status=pending'));
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;

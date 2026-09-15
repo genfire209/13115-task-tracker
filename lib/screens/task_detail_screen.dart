@@ -20,6 +20,7 @@ class TaskDetailScreen extends StatefulWidget {
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   String get taskId => widget.taskId;
   String? _reassignSelection;
+  bool _deleting = false;
 
   @override
   void initState() {
@@ -111,6 +112,43 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     );
   }
 
+  Future<void> _confirmDelete(TaskRepository repo, String requesterId, String title) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this task?'),
+        content: Text(
+          '"$title" and its full history (events, extension requests) will be permanently deleted. This can\'t be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.statusDeclined),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await repo.deleteTask(taskId, requesterId);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _deleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$e'), backgroundColor: AppTheme.statusDeclined),
+        );
+      }
+    }
+  }
+
   Future<DateTime?> _promptForDate(BuildContext context, DateTime initial) {
     return showDatePicker(
       context: context,
@@ -153,7 +191,25 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             .toList();
 
         return Scaffold(
-          appBar: AppBar(title: Text(task.title)),
+          appBar: AppBar(
+            title: Text(task.title),
+            actions: [
+              if (user.isAdmin)
+                IconButton(
+                  tooltip: 'Delete task permanently',
+                  icon: _deleting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.delete_forever_outlined),
+                  onPressed: _deleting
+                      ? null
+                      : () => _confirmDelete(repo, user.id, task.title),
+                ),
+            ],
+          ),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
