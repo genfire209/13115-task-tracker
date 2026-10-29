@@ -27,12 +27,14 @@ class TaskRepository extends ChangeNotifier {
   List<AppUser> get users => List.unmodifiable(_users);
   List<AppUser> get pendingApprovals => List.unmodifiable(_pendingApprovals);
 
-  /// Display name for a user id (falls back to the id/email if not loaded yet).
+  /// Display name for a user id. Falls back to the id/email if not loaded
+  /// yet - except the server's 'u_...' stand-ins, which members get for
+  /// people not on the roster (hidden admins, removed members).
   String nameFor(String userId) {
     for (final u in _users) {
       if (u.id == userId) return u.name;
     }
-    return userId;
+    return userId.startsWith('u_') ? 'A teammate' : userId;
   }
 
   Future<void> loadAll() async {

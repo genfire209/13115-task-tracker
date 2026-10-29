@@ -89,7 +89,8 @@ class AppUser {
     return AppUser(
       id: json['id'] as String,
       name: json['name'] as String,
-      email: json['email'] as String,
+      // Members get other people's records without an email (names only).
+      email: json['email'] as String? ?? '',
       authProvider: json['authProvider'] as String,
       role: (json['role'] as String) == 'captain'
           ? UserRole.captain
