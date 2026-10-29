@@ -21,6 +21,18 @@ class ApiUserGoneException implements Exception {
 class ApiService {
   static const String baseUrl = 'https://app-13115-tasktracker.azurewebsites.net/api';
 
+  /// Issued by the backend at login and sent with every other request; the
+  /// server only trusts the user it names. Shared by every ApiService
+  /// instance, set and cleared by AuthService.
+  static String? sessionToken;
+
+  /// Built when each request starts, so a request already under way keeps
+  /// the token it started with even if the user signs out meanwhile.
+  static Map<String, String> get _headers => {
+        'Content-Type': 'application/json',
+        if (sessionToken != null) 'Authorization': 'Bearer $sessionToken',
+      };
+
   Future<AppUser> login({
     required String provider,
     required String idToken,
@@ -28,43 +40,48 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'provider': provider, 'idToken': idToken, 'name': name}),
     );
     if (res.statusCode >= 400) {
       throw Exception('Login failed: ${res.body}');
     }
-    return AppUser.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+    final json = jsonDecode(res.body) as Map<String, dynamic>;
+    sessionToken = json['sessionToken'] as String?;
+    return AppUser.fromJson(json);
   }
 
   Future<List<Task>> fetchTasks() async {
-    final res = await http.get(Uri.parse('$baseUrl/tasks'));
+    final res = await http.get(Uri.parse('$baseUrl/tasks'), headers: _headers);
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => Task.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<List<TaskEvent>> fetchTaskEvents(String taskId) async {
-    final res = await http.get(Uri.parse('$baseUrl/tasks/$taskId/events'));
+    final res = await http.get(Uri.parse('$baseUrl/tasks/$taskId/events'), headers: _headers);
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => TaskEvent.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<List<AppUser>> fetchUsers() async {
-    final res = await http.get(Uri.parse('$baseUrl/users'));
+    final res = await http.get(Uri.parse('$baseUrl/users'), headers: _headers);
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<List<AppUser>> fetchPendingApprovals() async {
-    final res = await http.get(Uri.parse('$baseUrl/users/pending-approval'));
+    final res = await http.get(Uri.parse('$baseUrl/users/pending-approval'), headers: _headers);
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<AppUser> fetchUserById(String userId) async {
-    final res = await http.get(Uri.parse('$baseUrl/users/$userId'));
+    final res = await http.get(Uri.parse('$baseUrl/users/$userId'), headers: _headers);
     if (res.statusCode == 404 || res.statusCode == 403) {
       throw ApiUserGoneException('Account no longer exists or has been removed');
+    }
+    if (res.statusCode == 401) {
+      throw ApiUserGoneException('Session expired — please sign in again');
     }
     if (res.statusCode >= 400) {
       throw Exception('Failed to load user: ${res.body}');
@@ -79,7 +96,7 @@ class ApiService {
   }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'name': name, 'subteams': subteams.map(subteamToString).toList()}),
     );
     if (res.statusCode >= 400) {
@@ -93,7 +110,7 @@ class ApiService {
   Future<void> updateSubteams(String userId, List<Subteam> subteams) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'subteams': subteams.map(subteamToString).toList()}),
     );
     if (res.statusCode >= 400) {
@@ -111,7 +128,7 @@ class ApiService {
   }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({
         'role': role == UserRole.captain ? 'captain' : 'member',
         'requesterId': requesterId,
@@ -129,7 +146,7 @@ class ApiService {
   Future<void> renameUser(String userId, String name) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'name': name}),
     );
     if (res.statusCode >= 400) {
@@ -140,7 +157,7 @@ class ApiService {
   Future<void> setPushToken(String userId, String pushToken) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'pushToken': pushToken}),
     );
     if (res.statusCode >= 400) {
@@ -155,7 +172,7 @@ class ApiService {
   Future<void> clearPushToken(String userId) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'pushToken': null}),
     );
     if (res.statusCode >= 400) {
@@ -166,7 +183,7 @@ class ApiService {
   Future<void> approveUser(String userId) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'approved': true}),
     );
     if (res.statusCode >= 400) {
@@ -177,7 +194,7 @@ class ApiService {
   Future<void> removeUser(String userId) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'banned': true}),
     );
     if (res.statusCode >= 400) {
@@ -189,7 +206,7 @@ class ApiService {
   Future<void> setUserJunior(String userId, bool isJunior) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/users/$userId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'isJunior': isJunior}),
     );
     if (res.statusCode >= 400) {
@@ -207,7 +224,7 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/tasks'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({
         'title': title,
         'description': description,
@@ -233,7 +250,7 @@ class ApiService {
   }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/tasks/$taskId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({
         'action': action,
         'actorId': actorId,
@@ -254,7 +271,7 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/extension-requests'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({
         'taskId': taskId,
         'requestedBy': requestedBy,
@@ -273,6 +290,7 @@ class ApiService {
   Future<void> deleteTask({required String taskId, required String requesterId}) async {
     final res = await http.delete(
       Uri.parse('$baseUrl/tasks/$taskId?requesterId=$requesterId'),
+      headers: _headers,
     );
     if (res.statusCode == 403) {
       throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Not authorized');
@@ -283,7 +301,7 @@ class ApiService {
   }
 
   Future<List<ExtensionRequest>> fetchPendingExtensionRequests() async {
-    final res = await http.get(Uri.parse('$baseUrl/extension-requests?status=pending'));
+    final res = await http.get(Uri.parse('$baseUrl/extension-requests?status=pending'), headers: _headers);
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => ExtensionRequest.fromJson(j as Map<String, dynamic>)).toList();
   }
@@ -295,7 +313,7 @@ class ApiService {
   }) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/extension-requests/$extensionId'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'status': approve ? 'approved' : 'denied', 'actorId': actorId}),
     );
     if (res.statusCode >= 400) {
@@ -308,6 +326,7 @@ class ApiService {
   Future<FtcEventLive> fetchFtcEventLive({required int season, required String eventCode}) async {
     final res = await http.get(
       Uri.parse('$baseUrl/ftc-live/event?season=$season&code=$eventCode'),
+      headers: _headers,
     );
     if (res.statusCode == 404) {
       throw Exception('Event not found — check the season and event code');
@@ -319,7 +338,7 @@ class ApiService {
   }
 
   Future<List<WatchedFtcEvent>> fetchWatchedFtcEvents() async {
-    final res = await http.get(Uri.parse('$baseUrl/ftc-live/watched'));
+    final res = await http.get(Uri.parse('$baseUrl/ftc-live/watched'), headers: _headers);
     if (res.statusCode >= 400) {
       throw Exception('Failed to load watched events: ${res.body}');
     }
@@ -334,7 +353,7 @@ class ApiService {
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/ftc-live/watched'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode({'season': season, 'eventCode': eventCode, 'requesterId': requesterId}),
     );
     if (res.statusCode >= 400) {
@@ -343,7 +362,7 @@ class ApiService {
   }
 
   Future<void> removeWatchedFtcEvent(String id) async {
-    final res = await http.delete(Uri.parse('$baseUrl/ftc-live/watched/$id'));
+    final res = await http.delete(Uri.parse('$baseUrl/ftc-live/watched/$id'), headers: _headers);
     if (res.statusCode >= 400) {
       throw Exception('Failed to stop tracking event: ${res.body}');
     }
