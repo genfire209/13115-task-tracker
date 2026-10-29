@@ -345,6 +345,21 @@ class ApiService {
     return MeetDetail.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
+  Future<MatchDetail> fetchMatchDetail({
+    required int season,
+    required String code,
+    required String matchKey,
+  }) async {
+    final res = await http.get(
+      Uri.parse('$baseUrl/meets/$season/$code/matches/$matchKey'),
+      headers: _headers,
+    );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load match: ${res.body}');
+    }
+    return MatchDetail.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
   /// The meet in meet mode, or null if none is.
   Future<ActiveMeet?> fetchActiveMeet() async {
     final res = await http.get(Uri.parse('$baseUrl/meets/active'), headers: _headers);

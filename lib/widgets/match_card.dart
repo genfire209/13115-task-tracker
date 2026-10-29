@@ -9,12 +9,13 @@ const blueAllianceColor = AppTheme.statusActive;
 
 /// One FTC match: both alliances with team numbers and names, the scores
 /// once played (winner in bold), and otherwise when it should start.
-/// [ourTeam] is highlighted wherever it appears.
+/// [ourTeam] is highlighted wherever it appears. [onTap] opens the full match.
 class MatchCard extends StatelessWidget {
   final FtcMatch match;
   final int? ourTeam;
+  final VoidCallback? onTap;
 
-  const MatchCard({super.key, required this.match, this.ourTeam});
+  const MatchCard({super.key, required this.match, this.ourTeam, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -27,38 +28,46 @@ class MatchCard extends StatelessWidget {
               side: const BorderSide(color: AppTheme.primary, width: 1.5),
             )
           : null,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(match.description, style: const TextStyle(fontWeight: FontWeight.w700)),
-                const Spacer(),
-                Text(
-                  matchTimeLabel(match),
-                  style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 12),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _AllianceRow(
-              color: redAllianceColor,
-              teams: match.teamsOn('Red'),
-              score: match.redScore,
-              isWinner: winner == 'Red',
-              ourTeam: ourTeam,
-            ),
-            const SizedBox(height: 6),
-            _AllianceRow(
-              color: blueAllianceColor,
-              teams: match.teamsOn('Blue'),
-              score: match.blueScore,
-              isWinner: winner == 'Blue',
-              ourTeam: ourTeam,
-            ),
-          ],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text(match.description, style: const TextStyle(fontWeight: FontWeight.w700))),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      matchTimeLabel(match),
+                      textAlign: TextAlign.end,
+                      style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 12),
+                    ),
+                  ),
+                  if (onTap != null) const Icon(Icons.chevron_right, size: 18, color: AppTheme.onSurfaceMuted),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _AllianceRow(
+                color: redAllianceColor,
+                teams: match.teamsOn('Red'),
+                score: match.redScore,
+                isWinner: winner == 'Red',
+                ourTeam: ourTeam,
+              ),
+              const SizedBox(height: 6),
+              _AllianceRow(
+                color: blueAllianceColor,
+                teams: match.teamsOn('Blue'),
+                score: match.blueScore,
+                isWinner: winner == 'Blue',
+                ourTeam: ourTeam,
+              ),
+            ],
+          ),
         ),
       ),
     );
