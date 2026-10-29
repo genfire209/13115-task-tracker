@@ -1,0 +1,47 @@
+{
+    "active": {
+        "id": "meet-d836739b-8199-4a42-bdeb-72f71cdbc07c",
+        "season": 2026,
+        "eventCode": "USNJSOM1",
+        "teamNumber": 13115,
+        "testOnly": false,
+        "startedBy": "captain@x.com",
+        "eventName": "P1-1 Southern League Meet",
+        "waitingForFirstMatch": false,
+        "nextMatch": {
+            "matchKey": "QUALIFICATION-0-9",
+            "matchNum": 9,
+            "tournamentLevel": "QUALIFICATION",
+            "description": "Qualification 9",
+            "hasBeenPlayed": false,
+            "scheduledStartTime": "2026-10-24T08:56:00",
+            "postResultTime": null,
+            "teams": [
+                {
+                    "alliance": "Red",
+                    "teamNumber": 23743,
+                    "teamName": null
+                },
+                {
+                    "alliance": "Blue",
+                    "teamNumber": 17036,
+                    "teamName": null
+                },
+                {
+                    "alliance": "Blue",
+                    "teamNumber": 19735,
+                    "teamName": null
+                },
+                {
+                    "alliance": "Red",
+                    "teamNumber": 13115,
+                    "teamName": null
+                }
+            ],
+            "redScore": null,
+            "blueScore": null,
+            "actualStartTime": null,
+            "estimatedStartTime": "2026-10-24T13:37:00"
+        }
+    }
+}

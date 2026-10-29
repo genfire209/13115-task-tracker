@@ -5,10 +5,12 @@ import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
+import '../widgets/active_meet_banner.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/subteam_multi_select.dart';
 import '../widgets/task_list.dart';
+import 'meets_screen.dart';
 import 'task_detail_screen.dart';
 
 /// Portal for junior-team members (freshmen proving their commitment before
@@ -75,6 +77,14 @@ class _JuniorDashboardScreenState extends State<JuniorDashboardScreen> {
         title: const Text('13115 Task Tracker'),
         actions: [
           IconButton(
+            tooltip: 'Meets',
+            icon: const Icon(Icons.emoji_events_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MeetsScreen()),
+            ),
+          ),
+          IconButton(
             tooltip: 'My Subteam(s)',
             icon: const Icon(Icons.groups_2_outlined),
             onPressed: () => _editMySubteams(auth),
@@ -85,6 +95,7 @@ class _JuniorDashboardScreenState extends State<JuniorDashboardScreen> {
       ),
       body: Column(
         children: [
+          const ActiveMeetBanner(),
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Row(

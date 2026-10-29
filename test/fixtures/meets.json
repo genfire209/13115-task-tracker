@@ -1,0 +1,31 @@
+{
+    "season": 2026,
+    "ourTeam": 13115,
+    "events": [
+        {
+            "code": "USNJSOM1",
+            "name": "P1-1 Southern League Meet",
+            "dateStart": "2026-10-24T00:00:00",
+            "dateEnd": "2026-10-24T00:00:00",
+            "weAttend": true,
+            "isActive": true
+        },
+        {
+            "code": "USNJSOM4",
+            "name": "P2-5 Southern League Meet",
+            "dateStart": "2026-12-05T00:00:00",
+            "dateEnd": "2026-12-05T00:00:00",
+            "weAttend": false,
+            "isActive": false
+        }
+    ],
+    "active": {
+        "id": "meet-005068e8-b4ab-4cca-addd-28eb2f636a85",
+        "season": 2026,
+        "eventCode": "USNJSOM1",
+        "teamNumber": 13115,
+        "testOnly": false,
+        "startedBy": "captain@x.com",
+        "eventName": "P1-1 Southern League Meet"
+    }
+}
