@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'screens/captain_dashboard_screen.dart';
+import 'screens/match_detail_screen.dart';
 import 'screens/meet_detail_screen.dart';
 import 'screens/task_detail_screen.dart';
 import 'services/notification_service.dart';
@@ -12,7 +13,7 @@ import 'services/notification_service.dart';
 /// Every payload the backend sends carries either a `taskId` (all the
 /// task/extension notifications) or `type == 'member_needs_approval'` (a new
 /// member finished onboarding), or is a meet-mode alert (`type` starting
-/// `meet_`, with `season` + `eventCode`). Anything else — e.g. a broadcast —
+/// `meet_`, with `season` + `eventCode`, and `matchKey` for one match). Anything else — e.g. a broadcast —
 /// just opens the app with no extra navigation.
 void handleNotificationTap(Map<String, dynamic> data) {
   final nav = NotificationService.navigatorKey.currentState;
@@ -26,8 +27,13 @@ void handleNotificationTap(Map<String, dynamic> data) {
 
   final season = int.tryParse('${data['season']}');
   final eventCode = data['eventCode'] as String?;
+  final matchKey = data['matchKey'] as String?;
   if ('${data['type']}'.startsWith('meet_') && season != null && eventCode != null) {
-    nav.push(MaterialPageRoute(builder: (_) => MeetDetailScreen(season: season, code: eventCode)));
+    nav.push(MaterialPageRoute(
+      builder: (_) => matchKey != null
+          ? MatchDetailScreen(season: season, code: eventCode, matchKey: matchKey)
+          : MeetDetailScreen(season: season, code: eventCode),
+    ));
     return;
   }
 

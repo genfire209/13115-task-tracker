@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/match_card.dart';
 import '../widgets/responsive_center.dart';
+import 'match_detail_screen.dart';
 
 /// One meet: our next match, every upcoming match and result (team numbers
 /// and names, alliance scores), and rankings. Captains/admins turn meet mode
@@ -140,7 +141,7 @@ class _MeetDetailScreenState extends State<MeetDetailScreen> {
             _meetModeCard(meet, isCaptain, isAdmin),
             if (next != null) ...[
               _heading('Our next match'),
-              MatchCard(match: next, ourTeam: meet.ourTeam),
+              MatchCard(match: next, ourTeam: meet.ourTeam, onTap: () => _openMatch(meet, next)),
             ],
             if (meet.waitingForFirstMatch && upNext.isNotEmpty)
               const Padding(
@@ -155,12 +156,12 @@ class _MeetDetailScreenState extends State<MeetDetailScreen> {
             if (upNext.isEmpty)
               const Text('No upcoming matches.', style: TextStyle(color: AppTheme.onSurfaceMuted))
             else
-              ...upNext.map((m) => MatchCard(match: m, ourTeam: meet.ourTeam)),
+              ...upNext.map((m) => MatchCard(match: m, ourTeam: meet.ourTeam, onTap: () => _openMatch(meet, m))),
             _heading('Results'),
             if (results.isEmpty)
               const Text('No results yet.', style: TextStyle(color: AppTheme.onSurfaceMuted))
             else
-              ...results.map((m) => MatchCard(match: m, ourTeam: meet.ourTeam)),
+              ...results.map((m) => MatchCard(match: m, ourTeam: meet.ourTeam, onTap: () => _openMatch(meet, m))),
             if (meet.timezone != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -271,6 +272,18 @@ class _MeetDetailScreenState extends State<MeetDetailScreen> {
       ),
     );
   }
+
+  void _openMatch(MeetDetail meet, FtcMatch match) => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MatchDetailScreen(
+            season: meet.season,
+            code: meet.code,
+            matchKey: match.matchKey,
+            preview: match,
+          ),
+        ),
+      );
 
   Widget _heading(String text) => Padding(
         padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),

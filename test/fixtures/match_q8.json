@@ -1,0 +1,171 @@
+{
+    "season": 2026,
+    "eventCode": "USNJSOM1",
+    "eventName": "P1-1 Southern League Meet",
+    "ourTeam": 13115,
+    "match": {
+        "matchKey": "QUALIFICATION-0-8",
+        "matchNum": 8,
+        "tournamentLevel": "QUALIFICATION",
+        "description": "Qualification 8",
+        "hasBeenPlayed": true,
+        "scheduledStartTime": "2026-10-24T08:49:00",
+        "postResultTime": "2026-10-24T13:31:43.959",
+        "teams": [
+            {
+                "alliance": "Blue",
+                "teamNumber": 31127,
+                "teamName": null,
+                "station": 2
+            },
+            {
+                "alliance": "Blue",
+                "teamNumber": 32294,
+                "teamName": null,
+                "station": 1
+            },
+            {
+                "alliance": "Red",
+                "teamNumber": 36975,
+                "teamName": null,
+                "station": 1
+            },
+            {
+                "alliance": "Red",
+                "teamNumber": 10974,
+                "teamName": null,
+                "station": 2
+            }
+        ],
+        "redScore": 37,
+        "blueScore": 26,
+        "actualStartTime": null,
+        "estimatedStartTime": null
+    },
+    "breakdown": {
+        "red": {
+            "auto": {
+                "tips": 0,
+                "robots": [
+                    {
+                        "leave": true,
+                        "park": false,
+                        "teamNumber": 36975
+                    },
+                    {
+                        "leave": false,
+                        "park": false,
+                        "teamNumber": 10974
+                    }
+                ],
+                "leavePoints": 3,
+                "parkPoints": 0,
+                "hivePoints": 0,
+                "points": 3
+            },
+            "teleop": {
+                "tips": 1,
+                "hiveBalls": 2,
+                "gardenBalls": 0,
+                "robots": [
+                    {
+                        "park": true,
+                        "teamNumber": 36975
+                    },
+                    {
+                        "park": true,
+                        "teamNumber": 10974
+                    }
+                ],
+                "hivePoints": 24,
+                "flowerPoints": 0,
+                "gardenPoints": 0,
+                "parkPoints": 10,
+                "points": 34
+            },
+            "penaltyPoints": 0,
+            "minorFouls": 0,
+            "majorFouls": 0,
+            "total": 37,
+            "bonusRp": {
+                "swarm": false,
+                "pollinator1": false,
+                "pollinator2": false
+            }
+        },
+        "blue": {
+            "auto": {
+                "tips": 0,
+                "robots": [
+                    {
+                        "leave": true,
+                        "park": true,
+                        "teamNumber": 32294
+                    },
+                    {
+                        "leave": false,
+                        "park": false,
+                        "teamNumber": 31127
+                    }
+                ],
+                "leavePoints": 3,
+                "parkPoints": 5,
+                "hivePoints": 0,
+                "points": 8
+            },
+            "teleop": {
+                "tips": 0,
+                "hiveBalls": 3,
+                "gardenBalls": 2,
+                "robots": [
+                    {
+                        "park": true,
+                        "teamNumber": 32294
+                    },
+                    {
+                        "park": true,
+                        "teamNumber": 31127
+                    }
+                ],
+                "hivePoints": 6,
+                "flowerPoints": 0,
+                "gardenPoints": 2,
+                "parkPoints": 10,
+                "points": 18
+            },
+            "penaltyPoints": 0,
+            "minorFouls": 0,
+            "majorFouls": 0,
+            "total": 26,
+            "bonusRp": {
+                "swarm": true,
+                "pollinator1": false,
+                "pollinator2": false
+            }
+        },
+        "flowers": {
+            "redWall": [],
+            "scoring": [],
+            "blueWall": [],
+            "audience": []
+        }
+    },
+    "rankingPoints": {
+        "red": {
+            "win": 3,
+            "swarm": false,
+            "pollinator1": false,
+            "pollinator2": false,
+            "total": 3,
+            "bonusKnown": true
+        },
+        "blue": {
+            "win": 0,
+            "swarm": true,
+            "pollinator1": false,
+            "pollinator2": false,
+            "total": 1,
+            "bonusKnown": true
+        }
+    }
+}
