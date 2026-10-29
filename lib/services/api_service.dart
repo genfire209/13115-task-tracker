@@ -321,50 +321,56 @@ class ApiService {
     }
   }
 
-  // --- Hidden "FTC Live" feature ---
+  // --- Meets: every NJ meet's matches, and meet mode's match alerts ---
 
-  Future<FtcEventLive> fetchFtcEventLive({required int season, required String eventCode}) async {
+  Future<MeetList> fetchMeets({int? season}) async {
     final res = await http.get(
-      Uri.parse('$baseUrl/ftc-live/event?season=$season&code=$eventCode'),
+      Uri.parse('$baseUrl/meets${season != null ? '?season=$season' : ''}'),
       headers: _headers,
     );
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load meets: ${res.body}');
+    }
+    return MeetList.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
+
+  Future<MeetDetail> fetchMeet({required int season, required String code}) async {
+    final res = await http.get(Uri.parse('$baseUrl/meets/$season/$code'), headers: _headers);
     if (res.statusCode == 404) {
-      throw Exception('Event not found — check the season and event code');
+      throw Exception('Meet not found');
     }
     if (res.statusCode >= 400) {
-      throw Exception('Failed to load event: ${res.body}');
+      throw Exception('Failed to load meet: ${res.body}');
     }
-    return FtcEventLive.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+    return MeetDetail.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
   }
 
-  Future<List<WatchedFtcEvent>> fetchWatchedFtcEvents() async {
-    final res = await http.get(Uri.parse('$baseUrl/ftc-live/watched'), headers: _headers);
+  /// The meet in meet mode, or null if none is.
+  Future<ActiveMeet?> fetchActiveMeet() async {
+    final res = await http.get(Uri.parse('$baseUrl/meets/active'), headers: _headers);
     if (res.statusCode >= 400) {
-      throw Exception('Failed to load watched events: ${res.body}');
+      throw Exception('Failed to load meet mode: ${res.body}');
     }
-    final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
-    return data.map((j) => WatchedFtcEvent.fromJson(j as Map<String, dynamic>)).toList();
+    final active = (jsonDecode(res.body) as Map<String, dynamic>)['active'];
+    return active == null ? null : ActiveMeet.fromJson(active as Map<String, dynamic>);
   }
 
-  Future<void> addWatchedFtcEvent({
-    required int season,
-    required String eventCode,
-    required String requesterId,
-  }) async {
+  /// Captain/admin only. [testOnly] (alerts just to you) is admin-only.
+  Future<void> startMeet({required int season, required String eventCode, bool testOnly = false}) async {
     final res = await http.post(
-      Uri.parse('$baseUrl/ftc-live/watched'),
+      Uri.parse('$baseUrl/meets/active'),
       headers: _headers,
-      body: jsonEncode({'season': season, 'eventCode': eventCode, 'requesterId': requesterId}),
+      body: jsonEncode({'season': season, 'eventCode': eventCode, 'testOnly': testOnly}),
     );
     if (res.statusCode >= 400) {
-      throw Exception('Failed to track event: ${res.body}');
+      throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Failed to start meet mode');
     }
   }
 
-  Future<void> removeWatchedFtcEvent(String id) async {
-    final res = await http.delete(Uri.parse('$baseUrl/ftc-live/watched/$id'), headers: _headers);
+  Future<void> endMeet() async {
+    final res = await http.delete(Uri.parse('$baseUrl/meets/active'), headers: _headers);
     if (res.statusCode >= 400) {
-      throw Exception('Failed to stop tracking event: ${res.body}');
+      throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Failed to end meet mode');
     }
   }
 }

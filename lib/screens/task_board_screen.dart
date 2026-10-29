@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,13 +7,14 @@ import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gear_spinner.dart';
+import '../widgets/active_meet_banner.dart';
 import '../widgets/gradient_fab.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/subteam_multi_select.dart';
 import '../widgets/task_list.dart';
 import 'captain_dashboard_screen.dart';
 import 'create_task_screen.dart';
-import 'ftc_live_screen.dart';
+import 'meets_screen.dart';
 import 'task_detail_screen.dart';
 import 'team_roster_screen.dart';
 
@@ -32,9 +31,6 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
   bool _myTasksOnly = false;
   bool _pendingOnly = true;
 
-  int _titleTapCount = 0;
-  Timer? _titleTapResetTimer;
-
   @override
   void initState() {
     super.initState();
@@ -42,29 +38,6 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TaskRepository>().loadAll();
     });
-  }
-
-  @override
-  void dispose() {
-    _titleTapResetTimer?.cancel();
-    super.dispose();
-  }
-
-  // Deliberately undiscoverable: 7 taps on the title within 2 seconds opens
-  // the hidden FTC Live screen. A different tap count from the Captain
-  // Portal's 5-tap flow (which is also owner+PIN gated, unlike this one —
-  // there's no security reason to restrict live match scores).
-  void _onTitleTap() {
-    _titleTapResetTimer?.cancel();
-    _titleTapCount++;
-    if (_titleTapCount >= 7) {
-      _titleTapCount = 0;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const FtcLiveScreen()));
-    } else {
-      _titleTapResetTimer = Timer(const Duration(seconds: 2), () {
-        _titleTapCount = 0;
-      });
-    }
   }
 
   Future<void> _editMySubteams(AuthService auth) async {
@@ -125,12 +98,16 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onTap: _onTitleTap,
-          behavior: HitTestBehavior.opaque,
-          child: const Text('13115 Task Tracker'),
-        ),
+        title: const Text('13115 Task Tracker'),
         actions: [
+          IconButton(
+            tooltip: 'Meets',
+            icon: const Icon(Icons.emoji_events_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MeetsScreen()),
+            ),
+          ),
           if (isCaptain)
             IconButton(
               tooltip: 'Captain Portal',
@@ -172,6 +149,7 @@ class _TaskBoardScreenState extends State<TaskBoardScreen>
       ),
       body: Column(
         children: [
+          const ActiveMeetBanner(),
           SwitchListTile(
             title: const Text('My tasks only'),
             value: _myTasksOnly,
