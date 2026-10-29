@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/responsive_center.dart';
+import '../friendly_error.dart';
 import 'meet_detail_screen.dart';
 
 /// Every NJ meet this season — live, upcoming and past — with the ones
@@ -39,7 +40,7 @@ class _MeetsScreenState extends State<MeetsScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = friendlyError(e));
     }
   }
 

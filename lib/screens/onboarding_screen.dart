@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/background_gear.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/subteam_multi_select.dart';
+import '../friendly_error.dart';
 
 /// Shown once, right after a user's first sign-in (subteam is still null).
 /// Collects their real full name and which subteam they're on.
@@ -46,7 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         subteams: _subteams.toList(),
       );
     } catch (e) {
-      setState(() => _error = 'Could not save your profile: $e');
+      setState(() => _error = "Couldn't save your profile. ${friendlyError(e)}");
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -8,11 +8,10 @@ import 'notification_routing.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'state/task_repository.dart';
-import 'screens/junior_dashboard_screen.dart';
+import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/pending_approval_screen.dart';
-import 'screens/task_board_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/gear_spinner.dart';
 
@@ -108,9 +107,7 @@ class _RootRouterState extends State<_RootRouter> {
       }
     }
 
-    // Admins/captains always get the full portal, even if isJunior was ever
-    // mistakenly set on their account.
-    if (user.isJunior && !user.hasCaptainAccess) return const JuniorDashboardScreen();
-    return const TaskBoardScreen();
+    // Tabs for each section; juniors get the smaller set (see HomeScreen).
+    return const HomeScreen();
   }
 }

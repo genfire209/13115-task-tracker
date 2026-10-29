@@ -7,6 +7,7 @@ import '../services/google_web_signin_button.dart';
 import '../theme/app_theme.dart';
 import '../widgets/background_gear.dart';
 import '../widgets/gear_spinner.dart';
+import '../friendly_error.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await signIn();
     } catch (e) {
-      setState(() => _error = 'Sign-in failed: $e');
+      setState(() => _error = 'Sign-in failed. ${friendlyError(e)}');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

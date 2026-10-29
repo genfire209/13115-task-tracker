@@ -13,7 +13,7 @@ class TeamRosterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final users = context.watch<TaskRepository>().users;
     return Scaffold(
-      appBar: AppBar(title: const Text('Team Roster')),
+      appBar: AppBar(title: const Text('Team roster')),
       body: users.isEmpty
           ? const Center(
               child: Text('No team members yet.', style: TextStyle(color: AppTheme.onSurfaceMuted)),

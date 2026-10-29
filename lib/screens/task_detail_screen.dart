@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/task_card.dart';
+import '../friendly_error.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final String taskId;
@@ -143,7 +144,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       if (mounted) {
         setState(() => _deleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppTheme.statusDeclined),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: AppTheme.statusDeclined),
         );
       }
     }
@@ -268,12 +269,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   isAssignee) ...[
                 FilledButton(
                   onPressed: () => repo.completeTask(taskId, user.id),
-                  child: const Text('Mark Completed'),
+                  child: const Text('Mark completed'),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   icon: const Icon(Icons.schedule),
-                  label: const Text('Request Extension'),
+                  label: const Text('Request extension'),
                   onPressed: () async {
                     final newDate = await _promptForDate(context, task.dueDate);
                     if (newDate == null || !context.mounted) return;

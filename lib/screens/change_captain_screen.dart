@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
+import '../friendly_error.dart';
 
 /// Only reachable via the hidden gesture on the Captain Portal's title (see
 /// captain_dashboard_screen.dart). Requires the PIN entered there for every
@@ -33,7 +34,7 @@ class _ChangeCaptainScreenState extends State<ChangeCaptainScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppTheme.statusDeclined),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: AppTheme.statusDeclined),
         );
       }
     } finally {
@@ -45,7 +46,7 @@ class _ChangeCaptainScreenState extends State<ChangeCaptainScreen> {
   Widget build(BuildContext context) {
     final repo = context.watch<TaskRepository>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Change Captain')),
+      appBar: AppBar(title: const Text('Change captain')),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: repo.users.length,

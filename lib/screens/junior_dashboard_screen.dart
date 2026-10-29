@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../state/task_repository.dart';
 import '../theme/app_theme.dart';
 import '../widgets/active_meet_banner.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/responsive_center.dart';
-import '../widgets/subteam_multi_select.dart';
 import '../widgets/task_list.dart';
-import 'meets_screen.dart';
 import 'task_detail_screen.dart';
 
 /// Portal for junior-team members (freshmen proving their commitment before
@@ -34,37 +31,6 @@ class _JuniorDashboardScreenState extends State<JuniorDashboardScreen> {
     });
   }
 
-  Future<void> _editMySubteams(AuthService auth) async {
-    var selected = Set<Subteam>.from(auth.currentUser!.subteams);
-    final newSubteams = await showDialog<Set<Subteam>>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('My subteam(s)'),
-          content: SingleChildScrollView(
-            child: SubteamMultiSelect(
-              selected: selected,
-              onChanged: (next) => setDialogState(() => selected = next),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: selected.isEmpty ? null : () => Navigator.pop(ctx, selected),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (newSubteams != null) {
-      await auth.updateMySubteams(newSubteams.toList());
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -74,24 +40,7 @@ class _JuniorDashboardScreenState extends State<JuniorDashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('13115 Task Tracker'),
-        actions: [
-          IconButton(
-            tooltip: 'Meets',
-            icon: const Icon(Icons.emoji_events_outlined),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MeetsScreen()),
-            ),
-          ),
-          IconButton(
-            tooltip: 'My Subteam(s)',
-            icon: const Icon(Icons.groups_2_outlined),
-            onPressed: () => _editMySubteams(auth),
-          ),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: repo.loadAll),
-          IconButton(icon: const Icon(Icons.logout), onPressed: auth.signOut),
-        ],
+        title: const Text('My tasks'),
       ),
       body: Column(
         children: [
@@ -117,11 +66,11 @@ class _JuniorDashboardScreenState extends State<JuniorDashboardScreen> {
               child: GearSpinner(color: AppTheme.primary, size: 24),
             ),
           if (repo.loadError != null)
-            Padding(
-              padding: const EdgeInsets.all(12),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Text(
-                'Could not load tasks: ${repo.loadError}',
-                style: const TextStyle(color: AppTheme.statusDeclined),
+                "Couldn't load tasks. Check your connection, then pull down to try again.",
+                style: TextStyle(color: AppTheme.statusDeclined),
               ),
             ),
           Expanded(
@@ -130,6 +79,8 @@ class _JuniorDashboardScreenState extends State<JuniorDashboardScreen> {
                 tasks: myTasks,
                 nameFor: repo.nameFor,
                 showCategoryLabel: true,
+                onRefresh: repo.loadAll,
+                emptyMessage: 'Nothing assigned to you yet. A captain will add tasks here.',
                 onTapTask: (task) => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => TaskDetailScreen(taskId: task.id)),

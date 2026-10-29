@@ -24,7 +24,9 @@ class GradientFab extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppTheme.primary, Color(0xFF8B1029)],
+          // Starts at primaryFill, not primary, so the white label keeps
+          // 5:1+ contrast across the whole gradient.
+          colors: [AppTheme.primaryFill, AppTheme.primaryDeep],
         ),
         boxShadow: [
           BoxShadow(

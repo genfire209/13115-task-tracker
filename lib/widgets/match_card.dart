@@ -36,19 +36,31 @@ class MatchCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(child: Text(match.description, style: const TextStyle(fontWeight: FontWeight.w700))),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      matchTimeLabel(match),
-                      textAlign: TextAlign.end,
-                      style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 12),
+              // Time sits at the right edge; at large text sizes it wraps
+              // under the match name instead of squeezing it.
+              SizedBox(
+                width: double.infinity, // full width, so spaceBetween pushes the second item right
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 2,
+                  children: [
+                    Text(match.description, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            matchTimeLabel(match),
+                            style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 12),
+                          ),
+                        ),
+                        if (onTap != null) const Icon(Icons.chevron_right, size: 18, color: AppTheme.onSurfaceMuted),
+                      ],
                     ),
-                  ),
-                  if (onTap != null) const Icon(Icons.chevron_right, size: 18, color: AppTheme.onSurfaceMuted),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               _AllianceRow(
