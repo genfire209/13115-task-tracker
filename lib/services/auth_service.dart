@@ -14,6 +14,9 @@ const _kExpectedAccountKey = 'expected_google_account_email';
 // Google's browser sign-in (GIS One Tap) doesn't reliably restore a session
 // across a page reload — see tryRestoreSession.
 const _kCachedUserKey = 'cached_user_json_v1';
+// The backend session token that goes with the cached user (see
+// ApiService.sessionToken), so a restored web session can still call the API.
+const _kSessionTokenKey = 'session_token_v1';
 
 /// Handles Google sign-in and exposes the current logged-in user.
 class AuthService extends ChangeNotifier {
@@ -44,18 +47,24 @@ class AuthService extends ChangeNotifier {
   String? get webSignInError => _webSignInError;
   void clearWebSignInError() => _webSignInError = null;
 
-  /// Sets the current user and mirrors it into local storage (web session
-  /// fallback). Pass null to clear both.
+  /// Sets the current user and mirrors it, with the session token, into
+  /// local storage (web session fallback). Pass null to clear all of it.
   Future<void> _setCurrentUser(AppUser? user) async {
     _currentUser = user;
+    if (user == null) ApiService.sessionToken = null;
     try {
       if (user == null) {
         await _secureStorage.delete(key: _kCachedUserKey);
+        await _secureStorage.delete(key: _kSessionTokenKey);
       } else {
         await _secureStorage.write(
           key: _kCachedUserKey,
           value: jsonEncode(user.toJson()),
         );
+        final token = ApiService.sessionToken;
+        if (token != null) {
+          await _secureStorage.write(key: _kSessionTokenKey, value: token);
+        }
       }
     } catch (e) {
       debugPrint('Could not persist cached user: $e');
@@ -120,7 +129,15 @@ class AuthService extends ChangeNotifier {
   Future<void> _restoreCachedUserWeb() async {
     try {
       final raw = await _secureStorage.read(key: _kCachedUserKey);
+      final token = await _secureStorage.read(key: _kSessionTokenKey);
       if (raw == null) return;
+      if (token == null) {
+        // Cached by a build from before session tokens - the API won't
+        // accept it, so start over at the login screen.
+        await _secureStorage.delete(key: _kCachedUserKey);
+        return;
+      }
+      ApiService.sessionToken = token;
       _currentUser = AppUser.fromJson(jsonDecode(raw) as Map<String, dynamic>);
       // Pick up any role/subteam/approval changes, and drop the session if
       // the account has since been removed. A transient error leaves the
@@ -190,19 +207,14 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Shared by every sign-in path (native button, web rendered button, and
-  /// a matched silent restore): clears the previous account's push token if
-  /// this device is switching users, logs into the backend, and remembers
-  /// which account this device is now expected to be signed in as.
+  /// a matched silent restore): logs into the backend (which also hands back
+  /// the session token), and remembers which account this device is now
+  /// expected to be signed in as.
+  ///
+  /// On a shared device (e.g. siblings taking turns) the push token moves to
+  /// the new account by itself: the backend clears it from whoever had it
+  /// when _registerPushToken saves it for this account.
   Future<void> _completeSignIn(GoogleSignInAccount account) async {
-    // On a shared device (e.g. siblings taking turns), the account signing
-    // in now is about to start using this device's push token — clear it
-    // from whoever used it last, or both accounts would receive each
-    // other's notifications on this one physical device.
-    final previousEmail = await _secureStorage.read(key: _kExpectedAccountKey);
-    if (previousEmail != null && previousEmail != account.email) {
-      unawaited(_clearTokenBestEffort(previousEmail));
-    }
-
     final auth = await account.authentication;
     final user = await _api.login(
       provider: 'google',
