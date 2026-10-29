@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/match_card.dart';
 import '../widgets/responsive_center.dart';
+import '../friendly_error.dart';
 
 // Alliance panels: a dark tint of each alliance color, so white text keeps
 // 13:1+ contrast and the alliance color itself still reads at 5.6:1+.
@@ -64,7 +65,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = friendlyError(e));
     }
   }
 

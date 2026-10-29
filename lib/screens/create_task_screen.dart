@@ -29,7 +29,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
     final isCaptain = user.hasCaptainAccess;
 
     return Scaffold(
-      appBar: AppBar(title: Text(isCaptain ? 'Assign Task' : 'Publish Task')),
+      appBar: AppBar(title: Text(isCaptain ? 'Assign task' : 'Publish task')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -62,7 +62,8 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Text(c.name),
+                          // "Mechanical", not the raw enum name "mechanical".
+                          Text(c.name[0].toUpperCase() + c.name.substring(1)),
                         ],
                       ),
                     ))
@@ -142,7 +143,7 @@ class _CreateTaskScreenState extends State<CreateTaskScreen> {
               );
               Navigator.pop(context);
             },
-            child: const Text('Create Task'),
+            child: const Text('Create task'),
           ),
         ],
       ),

@@ -24,11 +24,25 @@ class _PulsingBadgeState extends State<PulsingBadge>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1100),
-    )..repeat(reverse: true);
+    );
     _scale = Tween(
       begin: 1.0,
       end: 1.08,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  // Reduce Motion: hold still. The status text still says what's needed.
+  bool _reduceMotion = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    if (_reduceMotion) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override
@@ -39,7 +53,7 @@ class _PulsingBadgeState extends State<PulsingBadge>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.active) return widget.child;
+    if (!widget.active || _reduceMotion) return widget.child;
     return ScaleTransition(scale: _scale, child: widget.child);
   }
 }

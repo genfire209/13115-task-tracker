@@ -206,7 +206,7 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
         title: GestureDetector(
           onTap: _onTitleTap,
           behavior: HitTestBehavior.opaque,
-          child: const Text('Captain Portal'),
+          child: const Text('Captain portal'),
         ),
       ),
       floatingActionButton: GradientFab(
@@ -215,7 +215,7 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
           MaterialPageRoute(builder: (_) => const CreateTaskScreen()),
         ),
         icon: Icons.add,
-        label: 'Assign Task',
+        label: 'Assign task',
       ),
       body: ResponsiveCenter(
         child: ListView(
@@ -425,7 +425,7 @@ class _CaptainDashboardScreenState extends State<CaptainDashboardScreen> {
                           ),
                         ),
                         FilterChip(
-                          label: Text(u.isJunior ? 'Junior Team' : 'Main Team'),
+                          label: Text(u.isJunior ? 'Junior team' : 'Main team'),
                           selected: u.isJunior,
                           onSelected: (_) => repo.setUserJunior(u.id, !u.isJunior),
                         ),

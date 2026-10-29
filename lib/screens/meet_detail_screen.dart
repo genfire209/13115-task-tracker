@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/gear_spinner.dart';
 import '../widgets/match_card.dart';
 import '../widgets/responsive_center.dart';
+import '../friendly_error.dart';
 import 'match_detail_screen.dart';
 
 /// One meet: our next match, every upcoming match and result (team numbers
@@ -56,7 +57,7 @@ class _MeetDetailScreenState extends State<MeetDetailScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = friendlyError(e));
     }
   }
 
@@ -68,7 +69,7 @@ class _MeetDetailScreenState extends State<MeetDetailScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$e'), backgroundColor: AppTheme.statusDeclined),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: AppTheme.statusDeclined),
         );
       }
     } finally {

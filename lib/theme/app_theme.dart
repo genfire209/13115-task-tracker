@@ -11,12 +11,18 @@ class AppTheme {
   static const background = Color(0xFF0E0E12);
   static const surface = Color(0xFF1A1A20);
   static const surfaceVariant = Color(0xFF242430);
+  // Team red, two strengths. [primary] is for red text, icons and
+  // indicators on the dark surfaces (4.96:1 on [surface]); [primaryFill] is
+  // the deeper red behind white button labels (5.10:1 — white on [primary]
+  // is only 3.49:1, below the 4.5:1 minimum for button text).
   static const primary = Color(0xFFFF3B57);
+  static const primaryFill = Color(0xFFD61F3A);
+  static const primaryDeep = Color(0xFF8B1029); // end of the red gradients
   static const onSurface = Color(0xFFF5F5F7);
   static const onSurfaceMuted = Color(0xFF9A9AA5);
   static const outline = Color(0xFF32323C);
 
-  static const statusOpen = Color(0xFF6B7280);
+  static const statusOpen = Color(0xFF9CA3AF); // 4.97:1 on its own chip tint
   static const statusPending = Color(0xFFFBBF24);
   static const statusActive = Color(0xFF60A5FA);
   static const statusDeclined = Color(0xFFF87171);
@@ -66,6 +72,10 @@ class AppTheme {
       onPrimary: Colors.white,
       secondary: primary,
       onSecondary: Colors.white,
+      // Selected chips and other "container" fills carry white text, so they
+      // use the deeper red (5.10:1), not [primary] (3.49:1).
+      secondaryContainer: primaryFill,
+      onSecondaryContainer: Colors.white,
       surface: surface,
       onSurface: onSurface,
       error: statusDeclined,
@@ -97,7 +107,7 @@ class AppTheme {
       ).apply(bodyColor: onSurface, displayColor: onSurface),
       cardTheme: CardThemeData(
         color: surface,
-        elevation: 6,
+        elevation: 0,
         shadowColor: Colors.black.withValues(alpha: 0.45),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
@@ -107,6 +117,9 @@ class AppTheme {
       ),
       chipTheme: ChipThemeData(
         backgroundColor: surfaceVariant,
+        selectedColor: primaryFill,
+        checkmarkColor: Colors.white,
+        secondaryLabelStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
         labelStyle: const TextStyle(
           color: onSurface,
           fontSize: 12,
@@ -140,9 +153,9 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
+          backgroundColor: primaryFill,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -151,9 +164,9 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: primary,
+          backgroundColor: primaryFill,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -164,20 +177,38 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: onSurface,
           side: const BorderSide(color: outline),
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: primary,
+        backgroundColor: primaryFill,
         foregroundColor: Colors.white,
       ),
       tabBarTheme: const TabBarThemeData(
         labelColor: primary,
         unselectedLabelColor: onSurfaceMuted,
         indicatorColor: primary,
+      ),
+      // Bottom tab bar: white icon on a red-tinted pill when selected
+      // (12.35:1), red label (4.96:1), muted otherwise (6.22:1).
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surface,
+        indicatorColor: primary.withValues(alpha: 0.22),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected) ? onSurface : onSurfaceMuted,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
+            color: states.contains(WidgetState.selected) ? primary : onSurfaceMuted,
+          ),
+        ),
       ),
       dividerTheme: const DividerThemeData(color: outline, space: 32),
       listTileTheme: const ListTileThemeData(iconColor: onSurfaceMuted),
