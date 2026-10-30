@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../app_version.dart';
 import '../models/user.dart';
+import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/responsive_center.dart';
@@ -116,12 +118,127 @@ class ProfileScreen extends StatelessWidget {
                       ))
                   .toList(),
             ),
+            if (user.isAdmin) ...[
+              const SizedBox(height: 24),
+              const RequiredVersionCard(),
+            ],
             const SizedBox(height: 40),
             OutlinedButton.icon(
               onPressed: auth.signOut,
               icon: const Icon(Icons.logout),
               label: const Text('Sign out'),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Admins only: once a new build is out in TestFlight, make everyone on an
+/// older build update before they can use the app again. Only up to the
+/// build this phone is running, so it can't require one that isn't out.
+class RequiredVersionCard extends StatefulWidget {
+  const RequiredVersionCard({super.key});
+
+  @override
+  State<RequiredVersionCard> createState() => _RequiredVersionCardState();
+}
+
+class _RequiredVersionCardState extends State<RequiredVersionCard> {
+  int? _minimum;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final minimum = await ApiService().fetchMinimumBuild();
+      if (mounted) setState(() => _minimum = minimum);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Could not check the required version');
+    }
+  }
+
+  Future<void> _require(int build) async {
+    final lockingOut = build > (_minimum ?? 0);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(lockingOut ? 'Require build $build?' : 'Allow older builds?'),
+        content: Text(lockingOut
+            ? 'Anyone on an older build is locked out until they update. '
+                'Only do this once build $build is available to testers in TestFlight.'
+            : 'Every build will work again, including old ones.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(lockingOut ? 'Require update' : 'Allow'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ApiService().setMinimumBuild(build);
+      if (mounted) setState(() => _minimum = build);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minimum = _minimum;
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Required app version', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+            const SizedBox(height: 4),
+            Text(
+              'This phone: build ${AppVersion.build}. Required: '
+              '${minimum == null ? '…' : minimum == 0 ? 'any build' : 'build $minimum or newer'}.',
+              style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 13),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: AppTheme.statusDeclined, fontSize: 13)),
+            ],
+            if (minimum != null) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (minimum < AppVersion.build)
+                    FilledButton(
+                      onPressed: _saving ? null : () => _require(AppVersion.build),
+                      child: Text('Require build ${AppVersion.build}'),
+                    ),
+                  if (minimum > 0)
+                    TextButton(
+                      onPressed: _saving ? null : () => _require(0),
+                      child: const Text('Allow older builds'),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

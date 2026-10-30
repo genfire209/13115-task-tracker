@@ -6,6 +6,7 @@ import '../models/task_event.dart';
 import '../models/extension_request.dart';
 import '../models/ftc_live.dart';
 import '../models/user.dart';
+import '../app_version.dart';
 
 /// Thrown when the backend says a user record is gone or no longer has
 /// access (404/403) — as opposed to a transient/server error, which stays a
@@ -15,6 +16,14 @@ class ApiUserGoneException implements Exception {
   ApiUserGoneException(this.message);
   @override
   String toString() => message;
+}
+
+/// Thrown when the backend turns this build away (426) because a newer one
+/// is required; AppVersion.updateRequired flips at the same time, which
+/// swaps the whole app for UpdateRequiredScreen.
+class UpdateRequiredException implements Exception {
+  @override
+  String toString() => 'This version of the app is out of date - update it to keep using the app.';
 }
 
 /// Thin wrapper around the deployed Azure App Service backend.
@@ -30,19 +39,50 @@ class ApiService {
   /// the token it started with even if the user signs out meanwhile.
   static Map<String, String> get _headers => {
         'Content-Type': 'application/json',
+        'X-App-Build': '${AppVersion.build}',
         if (sessionToken != null) 'Authorization': 'Bearer $sessionToken',
       };
+
+  /// Every request goes through here, so a 426 anywhere locks the app.
+  static Future<http.Response> _checked(Future<http.Response> request) async {
+    final res = await request;
+    if (res.statusCode == 426) {
+      AppVersion.updateRequired.value = true;
+      throw UpdateRequiredException();
+    }
+    return res;
+  }
+
+  /// The oldest build the server still allows (0 = any).
+  Future<int> fetchMinimumBuild() async {
+    final res = await _checked(http.get(Uri.parse('$baseUrl/app-version'), headers: _headers));
+    if (res.statusCode >= 400) throw Exception('Failed to check the app version');
+    return (jsonDecode(res.body) as Map<String, dynamic>)['minimumBuild'] as int;
+  }
+
+  /// Admins: make everyone on an older build update (or 0 to allow any).
+  /// The server refuses a build newer than the one this phone is on.
+  Future<void> setMinimumBuild(int minimumBuild) async {
+    final res = await _checked(http.put(
+      Uri.parse('$baseUrl/app-version'),
+      headers: _headers,
+      body: jsonEncode({'minimumBuild': minimumBuild}),
+    ));
+    if (res.statusCode >= 400) {
+      throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Failed to change the required version');
+    }
+  }
 
   Future<AppUser> login({
     required String provider,
     required String idToken,
     String? name,
   }) async {
-    final res = await http.post(
+    final res = await _checked(http.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: _headers,
       body: jsonEncode({'provider': provider, 'idToken': idToken, 'name': name}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Login failed: ${res.body}');
     }
@@ -52,31 +92,31 @@ class ApiService {
   }
 
   Future<List<Task>> fetchTasks() async {
-    final res = await http.get(Uri.parse('$baseUrl/tasks'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/tasks'), headers: _headers));
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => Task.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<List<TaskEvent>> fetchTaskEvents(String taskId) async {
-    final res = await http.get(Uri.parse('$baseUrl/tasks/$taskId/events'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/tasks/$taskId/events'), headers: _headers));
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => TaskEvent.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<List<AppUser>> fetchUsers() async {
-    final res = await http.get(Uri.parse('$baseUrl/users'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/users'), headers: _headers));
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<List<AppUser>> fetchPendingApprovals() async {
-    final res = await http.get(Uri.parse('$baseUrl/users/pending-approval'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/users/pending-approval'), headers: _headers));
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => AppUser.fromJson(j as Map<String, dynamic>)).toList();
   }
 
   Future<AppUser> fetchUserById(String userId) async {
-    final res = await http.get(Uri.parse('$baseUrl/users/$userId'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/users/$userId'), headers: _headers));
     if (res.statusCode == 404 || res.statusCode == 403) {
       throw ApiUserGoneException('Account no longer exists or has been removed');
     }
@@ -94,11 +134,11 @@ class ApiService {
     required String name,
     required List<Subteam> subteams,
   }) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'name': name, 'subteams': subteams.map(subteamToString).toList()}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to complete profile: ${res.body}');
     }
@@ -108,11 +148,11 @@ class ApiService {
   /// Used both for a captain/admin changing someone else's subteams and for
   /// a member changing their own after onboarding.
   Future<void> updateSubteams(String userId, List<Subteam> subteams) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'subteams': subteams.map(subteamToString).toList()}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to update subteams: ${res.body}');
     }
@@ -126,7 +166,7 @@ class ApiService {
     required String requesterId,
     required String pin,
   }) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({
@@ -134,7 +174,7 @@ class ApiService {
         'requesterId': requesterId,
         'pin': pin,
       }),
-    );
+    ));
     if (res.statusCode == 403) {
       throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Not authorized');
     }
@@ -144,22 +184,22 @@ class ApiService {
   }
 
   Future<void> renameUser(String userId, String name) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'name': name}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to rename team member: ${res.body}');
     }
   }
 
   Future<void> setPushToken(String userId, String pushToken) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'pushToken': pushToken}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to register push token: ${res.body}');
     }
@@ -170,33 +210,33 @@ class ApiService {
   /// or they'd keep receiving pushes meant for whoever's using the device
   /// now, since both would otherwise point at the same device token.
   Future<void> clearPushToken(String userId) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'pushToken': null}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to clear push token: ${res.body}');
     }
   }
 
   Future<void> approveUser(String userId) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'approved': true}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to approve team member: ${res.body}');
     }
   }
 
   Future<void> removeUser(String userId) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'banned': true}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to remove team member: ${res.body}');
     }
@@ -204,11 +244,11 @@ class ApiService {
 
   /// Captain/admin moving someone between the main and junior team.
   Future<void> setUserJunior(String userId, bool isJunior) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/users/$userId'),
       headers: _headers,
       body: jsonEncode({'isJunior': isJunior}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to update team: ${res.body}');
     }
@@ -222,7 +262,7 @@ class ApiService {
     String? assignedTo,
     required DateTime dueDate,
   }) async {
-    final res = await http.post(
+    final res = await _checked(http.post(
       Uri.parse('$baseUrl/tasks'),
       headers: _headers,
       body: jsonEncode({
@@ -233,7 +273,7 @@ class ApiService {
         'assignedTo': assignedTo,
         'dueDate': dueDate.toIso8601String(),
       }),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to create task: ${res.body}');
     }
@@ -248,7 +288,7 @@ class ApiService {
     String? reason,
     String? newAssigneeId,
   }) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/tasks/$taskId'),
       headers: _headers,
       body: jsonEncode({
@@ -257,7 +297,7 @@ class ApiService {
         'reason': reason,
         'newAssigneeId': newAssigneeId,
       }),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to update task: ${res.body}');
     }
@@ -269,7 +309,7 @@ class ApiService {
     required DateTime newDueDate,
     required String reason,
   }) async {
-    final res = await http.post(
+    final res = await _checked(http.post(
       Uri.parse('$baseUrl/extension-requests'),
       headers: _headers,
       body: jsonEncode({
@@ -278,7 +318,7 @@ class ApiService {
         'newDueDate': newDueDate.toIso8601String(),
         'reason': reason,
       }),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to request extension: ${res.body}');
     }
@@ -288,10 +328,10 @@ class ApiService {
   /// Permanently deletes a task and its history. Admin-only, enforced
   /// server-side.
   Future<void> deleteTask({required String taskId, required String requesterId}) async {
-    final res = await http.delete(
+    final res = await _checked(http.delete(
       Uri.parse('$baseUrl/tasks/$taskId?requesterId=$requesterId'),
       headers: _headers,
-    );
+    ));
     if (res.statusCode == 403) {
       throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Not authorized');
     }
@@ -301,7 +341,7 @@ class ApiService {
   }
 
   Future<List<ExtensionRequest>> fetchPendingExtensionRequests() async {
-    final res = await http.get(Uri.parse('$baseUrl/extension-requests?status=pending'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/extension-requests?status=pending'), headers: _headers));
     final List<dynamic> data = jsonDecode(res.body) as List<dynamic>;
     return data.map((j) => ExtensionRequest.fromJson(j as Map<String, dynamic>)).toList();
   }
@@ -311,11 +351,11 @@ class ApiService {
     required bool approve,
     required String actorId,
   }) async {
-    final res = await http.patch(
+    final res = await _checked(http.patch(
       Uri.parse('$baseUrl/extension-requests/$extensionId'),
       headers: _headers,
       body: jsonEncode({'status': approve ? 'approved' : 'denied', 'actorId': actorId}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to decide extension: ${res.body}');
     }
@@ -324,10 +364,10 @@ class ApiService {
   // --- Meets: every NJ meet's matches, and meet mode's match alerts ---
 
   Future<MeetList> fetchMeets({int? season}) async {
-    final res = await http.get(
+    final res = await _checked(http.get(
       Uri.parse('$baseUrl/meets${season != null ? '?season=$season' : ''}'),
       headers: _headers,
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to load meets: ${res.body}');
     }
@@ -335,7 +375,7 @@ class ApiService {
   }
 
   Future<MeetDetail> fetchMeet({required int season, required String code}) async {
-    final res = await http.get(Uri.parse('$baseUrl/meets/$season/$code'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/meets/$season/$code'), headers: _headers));
     if (res.statusCode == 404) {
       throw Exception('Meet not found');
     }
@@ -350,10 +390,10 @@ class ApiService {
     required String code,
     required String matchKey,
   }) async {
-    final res = await http.get(
+    final res = await _checked(http.get(
       Uri.parse('$baseUrl/meets/$season/$code/matches/$matchKey'),
       headers: _headers,
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception('Failed to load match: ${res.body}');
     }
@@ -362,7 +402,7 @@ class ApiService {
 
   /// The meet in meet mode, or null if none is.
   Future<ActiveMeet?> fetchActiveMeet() async {
-    final res = await http.get(Uri.parse('$baseUrl/meets/active'), headers: _headers);
+    final res = await _checked(http.get(Uri.parse('$baseUrl/meets/active'), headers: _headers));
     if (res.statusCode >= 400) {
       throw Exception('Failed to load meet mode: ${res.body}');
     }
@@ -372,18 +412,18 @@ class ApiService {
 
   /// Captain/admin only. [testOnly] (alerts just to you) is admin-only.
   Future<void> startMeet({required int season, required String eventCode, bool testOnly = false}) async {
-    final res = await http.post(
+    final res = await _checked(http.post(
       Uri.parse('$baseUrl/meets/active'),
       headers: _headers,
       body: jsonEncode({'season': season, 'eventCode': eventCode, 'testOnly': testOnly}),
-    );
+    ));
     if (res.statusCode >= 400) {
       throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Failed to start meet mode');
     }
   }
 
   Future<void> endMeet() async {
-    final res = await http.delete(Uri.parse('$baseUrl/meets/active'), headers: _headers);
+    final res = await _checked(http.delete(Uri.parse('$baseUrl/meets/active'), headers: _headers));
     if (res.statusCode >= 400) {
       throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Failed to end meet mode');
     }

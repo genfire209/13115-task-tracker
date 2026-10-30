@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'app_version.dart';
 import 'notification_routing.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
@@ -12,6 +13,7 @@ import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/pending_approval_screen.dart';
+import 'screens/update_required_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/gear_spinner.dart';
 
@@ -19,7 +21,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await NotificationService.initializeFirebase();
+  await AppVersion.load();
   runApp(const TaskTrackerApp());
+  unawaited(AppVersion.check());
 }
 
 class TaskTrackerApp extends StatelessWidget {
@@ -38,6 +42,8 @@ class TaskTrackerApp extends StatelessWidget {
         theme: AppTheme.dark,
         navigatorKey: NotificationService.navigatorKey,
         home: const _RootRouter(),
+        // A build the server no longer allows is locked until it's updated.
+        builder: lockWhenUpdateRequired,
       ),
     );
   }
@@ -52,12 +58,16 @@ class _RootRouter extends StatefulWidget {
 
 class _RootRouterState extends State<_RootRouter> {
   StreamSubscription<Map<String, dynamic>>? _tapSub;
+  // Re-checks the required build whenever the app comes back to the
+  // foreground, since it can sit open across a release.
+  late final AppLifecycleListener _lifecycle;
   bool _pendingHandled = false;
 
   @override
   void initState() {
     super.initState();
     context.read<AuthService>().tryRestoreSession();
+    _lifecycle = AppLifecycleListener(onResume: AppVersion.check);
     // Taps that happen while the app is already running.
     _tapSub = NotificationService.onNotificationTap.listen((data) {
       if (mounted && _readyForDeepLink()) handleNotificationTap(data);
@@ -67,6 +77,7 @@ class _RootRouterState extends State<_RootRouter> {
   @override
   void dispose() {
     _tapSub?.cancel();
+    _lifecycle.dispose();
     super.dispose();
   }
 
