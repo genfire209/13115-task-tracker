@@ -428,4 +428,34 @@ class ApiService {
       throw Exception(jsonDecode(res.body)['error'] as String? ?? 'Failed to end meet mode');
     }
   }
+
+  // --- Team lookup: any FTC team's info, match history and ranking points ---
+
+  /// Teams matching [query] — a number or (part of) a name.
+  Future<List<TeamSearchHit>> searchTeams(String query) async {
+    final res = await _checked(http.get(
+      Uri.parse('$baseUrl/teams/search?q=${Uri.encodeQueryComponent(query)}'),
+      headers: _headers,
+    ));
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to search teams: ${res.body}');
+    }
+    final List<dynamic> results = (jsonDecode(res.body) as Map<String, dynamic>)['results'] as List<dynamic>;
+    return results.map((j) => TeamSearchHit.fromJson(j as Map<String, dynamic>)).toList();
+  }
+
+  /// One team's info plus its events, rankings and matches this season.
+  Future<TeamLookupResult> lookupTeam({required int teamNumber, int? season}) async {
+    final res = await _checked(http.get(
+      Uri.parse('$baseUrl/teams/$teamNumber${season != null ? '?season=$season' : ''}'),
+      headers: _headers,
+    ));
+    if (res.statusCode == 404) {
+      throw Exception('Team $teamNumber not found');
+    }
+    if (res.statusCode >= 400) {
+      throw Exception('Failed to load team: ${res.body}');
+    }
+    return TeamLookupResult.fromJson(jsonDecode(res.body) as Map<String, dynamic>);
+  }
 }

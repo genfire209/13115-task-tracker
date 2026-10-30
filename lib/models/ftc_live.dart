@@ -430,3 +430,108 @@ int currentFtcSeason() {
   final now = DateTime.now();
   return now.month >= 9 ? now.year : now.year - 1;
 }
+
+/// One hit from a team-number-or-name search — [name] is null when the
+/// query was a plain number, since the backend doesn't need to resolve one.
+class TeamSearchHit {
+  final int number;
+  final String? name;
+
+  TeamSearchHit({required this.number, this.name});
+
+  factory TeamSearchHit.fromJson(Map<String, dynamic> json) => TeamSearchHit(
+        number: json['number'] as int,
+        name: json['name'] as String?,
+      );
+}
+
+/// A team's public info, straight from FIRST's team database.
+class TeamInfo {
+  final int teamNumber;
+  final String? nameFull;
+  final String? nameShort;
+  final String? schoolName;
+  final String? city;
+  final String? stateProv;
+  final String? country;
+  final int? rookieYear;
+  final String? displayLocation;
+
+  TeamInfo({
+    required this.teamNumber,
+    this.nameFull,
+    this.nameShort,
+    this.schoolName,
+    this.city,
+    this.stateProv,
+    this.country,
+    this.rookieYear,
+    this.displayLocation,
+  });
+
+  factory TeamInfo.fromJson(Map<String, dynamic> json) => TeamInfo(
+        teamNumber: json['teamNumber'] as int,
+        nameFull: json['nameFull'] as String?,
+        nameShort: json['nameShort'] as String?,
+        schoolName: json['schoolName'] as String?,
+        city: json['city'] as String?,
+        stateProv: json['stateProv'] as String?,
+        country: json['country'] as String?,
+        rookieYear: json['rookieYear'] as int?,
+        displayLocation: json['displayLocation'] as String?,
+      );
+}
+
+/// One event a looked-up team attended this season — its ranking there
+/// (once posted) and the matches it played, the same shape as a meet's.
+class TeamEventSummary {
+  final String code;
+  final String name;
+  final String? timezone;
+  final DateTime? dateStart;
+  final RankingRow? ranking;
+  final List<FtcMatch> matches;
+
+  TeamEventSummary({
+    required this.code,
+    required this.name,
+    this.timezone,
+    this.dateStart,
+    this.ranking,
+    required this.matches,
+  });
+
+  factory TeamEventSummary.fromJson(Map<String, dynamic> json) => TeamEventSummary(
+        code: json['code'] as String,
+        name: json['name'] as String,
+        timezone: json['timezone'] as String?,
+        dateStart: parseVenueLocalTime(json['dateStart'] as String?),
+        ranking: json['ranking'] == null ? null : RankingRow.fromJson(json['ranking'] as Map<String, dynamic>),
+        matches:
+            (json['matches'] as List<dynamic>).map((m) => FtcMatch.fromJson(m as Map<String, dynamic>)).toList(),
+      );
+}
+
+/// Everything about one team, for the lookup screen: its info, and every
+/// event (with ranking and matches) it attended this season.
+class TeamLookupResult {
+  final int season;
+  final int teamNumber;
+  final TeamInfo info;
+  final List<TeamEventSummary> events;
+
+  TeamLookupResult({required this.season, required this.teamNumber, required this.info, required this.events});
+
+  /// Every match the team played this season, across all its events, in
+  /// schedule order — for the lookup screen's combined match-history list.
+  List<FtcMatch> get allMatches => events.expand((e) => e.matches).toList();
+
+  factory TeamLookupResult.fromJson(Map<String, dynamic> json) => TeamLookupResult(
+        season: json['season'] as int,
+        teamNumber: json['teamNumber'] as int,
+        info: TeamInfo.fromJson(json['info'] as Map<String, dynamic>),
+        events: (json['events'] as List<dynamic>)
+            .map((e) => TeamEventSummary.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}

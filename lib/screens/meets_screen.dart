@@ -8,6 +8,7 @@ import '../widgets/gear_spinner.dart';
 import '../widgets/responsive_center.dart';
 import '../friendly_error.dart';
 import 'meet_detail_screen.dart';
+import 'team_lookup_screen.dart';
 
 /// Every NJ meet this season — live, upcoming and past — with the ones
 /// we're registered for starred. Tapping one shows its matches, results and
@@ -63,7 +64,16 @@ class _MeetsScreenState extends State<MeetsScreen> {
     final past = meets?.events.where(isPast).toList().reversed.toList() ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Meets')),
+      appBar: AppBar(
+        title: const Text('Meets'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Look up a team',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TeamLookupScreen())),
+          ),
+        ],
+      ),
       body: ResponsiveCenter(
         child: RefreshIndicator(
           onRefresh: _load,
