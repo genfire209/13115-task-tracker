@@ -18,5 +18,7 @@ Steps:
 5. `cd ios && pod install && cd ..`, then `flutter build ipa --release`.
 6. Upload build/ios/ipa/*.ipa with the Transporter app, the same way as before. Or use `xcrun altool --upload-app` if an App Store Connect API key is set up.
 7. In App Store Connect → TestFlight, add the build to the external testers group and submit for Beta App Review.
+8. Once the build is approved and testers can install it, make everyone update: install it on your phone, then in the app go to Profile → Required app version → "Require build N". Anyone on an older build sees "Update required" until they update. Builds 8 and older can't show that screen, so they get a single "Update required" task card instead. "Allow older builds" undoes it.
+   The web app at 13115robotics.com/app is locked out too until it's rebuilt from this version.
 
 Server: github.com/genfire209/13115-task-tracker-api deploys to Azure on every push to its main. It still serves old app builds (ALLOW_LEGACY_CLIENTS=true in Azure); turn that off once everyone is on this build, because old builds skip the sign-in check.
