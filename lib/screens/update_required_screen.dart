@@ -26,6 +26,19 @@ class UpdateRequiredScreen extends StatefulWidget {
 class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
   bool _checking = false;
 
+  /// kIsWeb covers the web build; everything else is a native install, where
+  /// the right instructions depend on iOS (TestFlight) vs Android (Play
+  /// Store) - two different update mechanisms, not interchangeable.
+  String get _updateInstructions {
+    if (kIsWeb) return 'A new version of the app is out. Reload this page to get it.';
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return 'A new version of the app is out. Open the Play Store, tap Update '
+          'next to 13115 Robotics, then open this app again.';
+    }
+    return 'A new version of the app is out. Open the TestFlight app, tap Update '
+        'next to 13115 Task Tracker, then open this app again.';
+  }
+
   Future<void> _checkAgain() async {
     setState(() => _checking = true);
     try {
@@ -65,13 +78,10 @@ class _UpdateRequiredScreenState extends State<UpdateRequiredScreen> {
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      kIsWeb
-                          ? 'A new version of the app is out. Reload this page to get it.'
-                          : 'A new version of the app is out. Open the TestFlight app, tap Update '
-                              'next to 13115 Task Tracker, then open this app again.',
+                    Text(
+                      _updateInstructions,
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: AppTheme.onSurfaceMuted),
+                      style: const TextStyle(color: AppTheme.onSurfaceMuted),
                     ),
                     const SizedBox(height: 8),
                     Text(

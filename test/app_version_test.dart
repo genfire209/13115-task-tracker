@@ -3,6 +3,7 @@
 // can require the build their phone is on from Profile.
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -68,23 +69,45 @@ void main() {
     tester.view.physicalSize = const Size(360, 740) * 3;
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.dark,
-      builder: (context, child) => MediaQuery.withClampedTextScaling(
-        minScaleFactor: 2,
-        maxScaleFactor: 2,
-        child: lockWhenUpdateRequired(context, child),
-      ),
-      home: const Scaffold(body: Text('Task board')),
-    ));
-    expect(find.text('Task board'), findsOneWidget);
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.dark,
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: 2,
+          maxScaleFactor: 2,
+          child: lockWhenUpdateRequired(context, child),
+        ),
+        home: const Scaffold(body: Text('Task board')),
+      ));
+      expect(find.text('Task board'), findsOneWidget);
 
-    AppVersion.updateRequired.value = true;
-    await tester.pump();
-    expect(find.text('Task board'), findsNothing);
-    expect(find.text('Update required'), findsOneWidget);
-    expect(find.textContaining('TestFlight'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+      AppVersion.updateRequired.value = true;
+      await tester.pump();
+      expect(find.text('Task board'), findsNothing);
+      expect(find.text('Update required'), findsOneWidget);
+      expect(find.textContaining('TestFlight'), findsOneWidget); // iOS: TestFlight, not the Play Store
+      expect(tester.takeException(), isNull);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  testWidgets('Android sees Play Store instructions, not TestFlight', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    try {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.dark,
+        builder: (context, child) => lockWhenUpdateRequired(context, child),
+        home: const Scaffold(body: Text('Task board')),
+      ));
+      AppVersion.updateRequired.value = true;
+      await tester.pump();
+      expect(find.textContaining('Play Store'), findsOneWidget);
+      expect(find.textContaining('TestFlight'), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('an admin requires the build on their phone, after confirming', (tester) async {
@@ -95,7 +118,7 @@ void main() {
         home: const Scaffold(body: RequiredVersionCard()),
       ));
       await tester.pumpAndSettle();
-      expect(find.textContaining('This phone: build 9. Required: build 8 or newer.'), findsOneWidget);
+      expect(find.textContaining('This app: build 9. Required: build 8 or newer.'), findsOneWidget);
 
       await tester.tap(find.text('Require build 9'));
       await tester.pumpAndSettle();

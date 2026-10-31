@@ -135,9 +135,12 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-/// Admins only: once a new build is out in TestFlight, make everyone on an
-/// older build update before they can use the app again. Only up to the
-/// build this phone is running, so it can't require one that isn't out.
+/// Admins only: make everyone on an older build update before they can use
+/// the app again. One build number, enforced the same way for iOS, Android
+/// and the web build alike - so "require build N" locks out stragglers on
+/// all three at once, not just whichever platform this is opened from. Only
+/// up to the build this device is running, so it can't require one that
+/// isn't out yet.
 class RequiredVersionCard extends StatefulWidget {
   const RequiredVersionCard({super.key});
 
@@ -172,8 +175,10 @@ class _RequiredVersionCardState extends State<RequiredVersionCard> {
       builder: (ctx) => AlertDialog(
         title: Text(lockingOut ? 'Require build $build?' : 'Allow older builds?'),
         content: Text(lockingOut
-            ? 'Anyone on an older build is locked out until they update. '
-                'Only do this once build $build is available to testers in TestFlight.'
+            ? 'Anyone on an older build is locked out until they update - on iOS, Android '
+                'and the web app alike. Only do this once build $build has gone out '
+                'everywhere: approved for testers in TestFlight, rolled out on the Play '
+                'Store, and redeployed to the website.'
             : 'Every build will work again, including old ones.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -212,7 +217,7 @@ class _RequiredVersionCardState extends State<RequiredVersionCard> {
             const Text('Required app version', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
             const SizedBox(height: 4),
             Text(
-              'This phone: build ${AppVersion.build}. Required: '
+              'This app: build ${AppVersion.build}. Required: '
               '${minimum == null ? '…' : minimum == 0 ? 'any build' : 'build $minimum or newer'}.',
               style: const TextStyle(color: AppTheme.onSurfaceMuted, fontSize: 13),
             ),
