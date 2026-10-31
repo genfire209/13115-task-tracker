@@ -23,6 +23,7 @@
       "venue": "Holmdel High School",
       "city": "Holmdel",
       "ranking": null,
+      "totalRankingPoints": 3,
       "matches": [
         {
           "matchKey": "QUALIFICATION-0-3",

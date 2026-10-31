@@ -490,6 +490,11 @@ class TeamEventSummary {
   final String? timezone;
   final DateTime? dateStart;
   final RankingRow? ranking;
+  // The whole-number sum of ranking points earned across played matches -
+  // ranking?.rankingScore is the average per match instead (what FIRST's own
+  // rankings table confusingly just calls "Ranking Points"). Null until the
+  // team has played a match.
+  final int? totalRankingPoints;
   final List<FtcMatch> matches;
 
   TeamEventSummary({
@@ -498,6 +503,7 @@ class TeamEventSummary {
     this.timezone,
     this.dateStart,
     this.ranking,
+    this.totalRankingPoints,
     required this.matches,
   });
 
@@ -507,6 +513,7 @@ class TeamEventSummary {
         timezone: json['timezone'] as String?,
         dateStart: parseVenueLocalTime(json['dateStart'] as String?),
         ranking: json['ranking'] == null ? null : RankingRow.fromJson(json['ranking'] as Map<String, dynamic>),
+        totalRankingPoints: json['totalRankingPoints'] as int?,
         matches:
             (json['matches'] as List<dynamic>).map((m) => FtcMatch.fromJson(m as Map<String, dynamic>)).toList(),
       );
