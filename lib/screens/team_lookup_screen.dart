@@ -216,12 +216,16 @@ class _TeamLookupScreenState extends State<TeamLookupScreen> {
         else
           for (final event in result.events) ...[
             _heading(event.name),
-            if (event.ranking != null)
+            if (event.ranking != null || event.totalRankingPoints != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Text(
-                  'Rank ${event.ranking!.rank} · ${event.ranking!.wins}-${event.ranking!.losses}-${event.ranking!.ties}'
-                  '${event.ranking!.rankingScore != null ? ' · RS ${event.ranking!.rankingScore!.toStringAsFixed(2)}' : ''}',
+                  [
+                    if (event.ranking != null)
+                      'Rank ${event.ranking!.rank} · ${event.ranking!.wins}-${event.ranking!.losses}-${event.ranking!.ties}',
+                    if (event.totalRankingPoints != null) '${event.totalRankingPoints} RP total',
+                    if (event.ranking?.rankingScore != null) 'RS ${event.ranking!.rankingScore!.toStringAsFixed(2)} avg',
+                  ].join(' · '),
                   style: const TextStyle(color: AppTheme.onSurfaceMuted),
                 ),
               ),

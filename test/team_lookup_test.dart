@@ -33,6 +33,7 @@ void main() {
 
     final event = result.events.first;
     expect(event.code, 'USNJSOM1');
+    expect(event.totalRankingPoints, 3); // 1 win (3 RP), 5 losses - a whole number, unlike the averaged RS
     expect(event.matches, hasLength(6));
     expect(event.matches.every((m) => m.involves(13115)), isTrue);
     expect(result.allMatches, hasLength(6));
