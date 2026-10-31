@@ -1,17 +1,19 @@
 enum UserRole { captain, member }
 
-enum Subteam { mechanical, outreach, programming, strategy }
+enum Subteam { driving, outtake, intake, flower, systemIntegration }
 
 Subteam? subteamFromString(String? s) {
   switch (s) {
-    case 'mechanical':
-      return Subteam.mechanical;
-    case 'outreach':
-      return Subteam.outreach;
-    case 'programming':
-      return Subteam.programming;
-    case 'strategy':
-      return Subteam.strategy;
+    case 'driving':
+      return Subteam.driving;
+    case 'outtake':
+      return Subteam.outtake;
+    case 'intake':
+      return Subteam.intake;
+    case 'flower':
+      return Subteam.flower;
+    case 'system_integration':
+      return Subteam.systemIntegration;
     default:
       return null;
   }
@@ -19,27 +21,31 @@ Subteam? subteamFromString(String? s) {
 
 String subteamToString(Subteam s) {
   switch (s) {
-    case Subteam.mechanical:
-      return 'mechanical';
-    case Subteam.outreach:
-      return 'outreach';
-    case Subteam.programming:
-      return 'programming';
-    case Subteam.strategy:
-      return 'strategy';
+    case Subteam.driving:
+      return 'driving';
+    case Subteam.outtake:
+      return 'outtake';
+    case Subteam.intake:
+      return 'intake';
+    case Subteam.flower:
+      return 'flower';
+    case Subteam.systemIntegration:
+      return 'system_integration';
   }
 }
 
 String subteamLabel(Subteam s) {
   switch (s) {
-    case Subteam.mechanical:
-      return 'Mechanical';
-    case Subteam.outreach:
-      return 'Outreach';
-    case Subteam.programming:
-      return 'Programming';
-    case Subteam.strategy:
-      return 'Strategy';
+    case Subteam.driving:
+      return 'Driving';
+    case Subteam.outtake:
+      return 'Outtake';
+    case Subteam.intake:
+      return 'Intake';
+    case Subteam.flower:
+      return 'Flower';
+    case Subteam.systemIntegration:
+      return 'System Integration';
   }
 }
 

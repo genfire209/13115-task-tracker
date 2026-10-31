@@ -20,7 +20,7 @@ void main() {
             'email': 'a@x.com',
             'authProvider': 'google',
             'role': 'member',
-            'subteams': ['programming'],
+            'subteams': ['system_integration'],
             'sessionToken': 'tok-123',
           }),
           200,
