@@ -40,7 +40,7 @@ AppUser person({UserRole role = UserRole.member, bool junior = false}) => AppUse
       authProvider: 'google',
       role: role,
       isJunior: junior,
-      subteams: const [Subteam.programming],
+      subteams: const [Subteam.systemIntegration],
     );
 
 /// Shows HomeScreen for [user] with an empty fake backend, then runs [then]

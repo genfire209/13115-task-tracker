@@ -33,6 +33,12 @@ class AppTheme {
   static const categoryProgramming = Color(0xFFA78BFA);
   static const categoryStrategy = Color(0xFFFBBF24);
 
+  static const subteamDriving = Color(0xFFFB923C);
+  static const subteamOuttake = Color(0xFF22D3EE);
+  static const subteamIntake = Color(0xFF2DD4BF);
+  static const subteamFlower = Color(0xFFF472B6);
+  static const subteamSystemIntegration = Color(0xFF818CF8);
+
   // Shared rounded style for `DropdownMenu` (used for member pickers), since
   // it doesn't automatically pick up the ambient `inputDecorationTheme` the
   // way `TextField`/`DropdownButtonFormField` do.
@@ -249,14 +255,16 @@ class AppTheme {
 
   static Color subteamColor(Subteam subteam) {
     switch (subteam) {
-      case Subteam.mechanical:
-        return categoryMechanical;
-      case Subteam.outreach:
-        return categoryOutreach;
-      case Subteam.programming:
-        return categoryProgramming;
-      case Subteam.strategy:
-        return categoryStrategy;
+      case Subteam.driving:
+        return subteamDriving;
+      case Subteam.outtake:
+        return subteamOuttake;
+      case Subteam.intake:
+        return subteamIntake;
+      case Subteam.flower:
+        return subteamFlower;
+      case Subteam.systemIntegration:
+        return subteamSystemIntegration;
     }
   }
 }
